@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: compatibility (Aplicaciones de Windows) — a foreign app
+       window adapted by a sun-orange gear (§8.4). Original artwork,
+       Tombatossals Softworks; no Microsoft imagery. Light source: top-left. -->
+  <defs>
+    <linearGradient id="cpt-bar" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5A473B"/>
+      <stop offset="1" stop-color="#3E3028"/>
+    </linearGradient>
+    <linearGradient id="cpt-gear" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FCAF3E"/>
+      <stop offset="1" stop-color="#F57900"/>
+    </linearGradient>
+  </defs>
+  <rect x="6" y="8" width="30" height="25" rx="2"
+        fill="#FFFFFF" stroke="#888A85" stroke-width="1"/>
+  <path d="M 6 10 a 2 2 0 0 1 2 -2 h 26 a 2 2 0 0 1 2 2 v 4.5 h -30 z"
+        fill="url(#cpt-bar)" stroke="#2E3436" stroke-width="1"/>
+  <circle cx="31.5" cy="11.2" r="1.5" fill="#F57900"/>
+  <g stroke="#BABDB6" stroke-width="2" stroke-linecap="round">
+    <line x1="10" y1="20" x2="26" y2="20"/>
+    <line x1="10" y1="25" x2="22" y2="25"/>
+  </g>
+  <g fill="url(#cpt-gear)" stroke="#CE5C00" stroke-width="0.8">
+    <rect x="31.8" y="22" width="4.4" height="6" rx="1.4"/>
+    <rect x="31.8" y="38" width="4.4" height="6" rx="1.4"/>
+    <rect x="23" y="30.8" width="6" height="4.4" rx="1.4"/>
+    <rect x="39" y="30.8" width="6" height="4.4" rx="1.4"/>
+    <rect x="31.8" y="22" width="4.4" height="6" rx="1.4"
+          transform="rotate(45 34 33)"/>
+    <rect x="31.8" y="38" width="4.4" height="6" rx="1.4"
+          transform="rotate(45 34 33)"/>
+    <rect x="23" y="30.8" width="6" height="4.4" rx="1.4"
+          transform="rotate(45 34 33)"/>
+    <rect x="39" y="30.8" width="6" height="4.4" rx="1.4"
+          transform="rotate(45 34 33)"/>
+  </g>
+  <circle cx="34" cy="33" r="7.5" fill="url(#cpt-gear)"
+          stroke="#CE5C00" stroke-width="1"/>
+  <circle cx="34" cy="33" r="3.2" fill="#FFFFFF"/>
+</svg>

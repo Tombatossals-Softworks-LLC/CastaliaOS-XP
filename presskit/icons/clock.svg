@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: clock — aluminium ring, sun-orange hands (§8.4).
+       Original artwork, Tombatossals Softworks. Light source: top-left. -->
+  <defs>
+    <linearGradient id="clk-ring" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EEEEEC"/>
+      <stop offset="1" stop-color="#BABDB6"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="24" cy="42.5" rx="13" ry="2" fill="#2E3436" opacity="0.14"/>
+  <circle cx="24" cy="24" r="17.5" fill="url(#clk-ring)"
+          stroke="#555753" stroke-width="1.5"/>
+  <circle cx="24" cy="24" r="14" fill="#FFFFFF"
+          stroke="#888A85" stroke-width="1"/>
+  <g stroke="#888A85" stroke-width="2" stroke-linecap="round">
+    <line x1="24" y1="12" x2="24" y2="15"/>
+    <line x1="24" y1="33" x2="24" y2="36"/>
+    <line x1="12" y1="24" x2="15" y2="24"/>
+    <line x1="33" y1="24" x2="36" y2="24"/>
+  </g>
+  <line x1="24" y1="24" x2="24" y2="15.5" stroke="#F57900"
+        stroke-width="2.6" stroke-linecap="round"/>
+  <line x1="24" y1="24" x2="30.5" y2="28" stroke="#CE5C00"
+        stroke-width="3.2" stroke-linecap="round"/>
+  <circle cx="24" cy="24" r="2" fill="#8F5902"/>
+  <path d="M 13 14 a 14 14 0 0 1 14 -4 q -2 5.5 -8 5.5 t -6 -1.5 z"
+        fill="#FFFFFF" opacity="0.4"/>
+</svg>

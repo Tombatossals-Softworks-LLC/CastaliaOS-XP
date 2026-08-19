@@ -1,0 +1,5 @@
+add_executable(castalia-monitor src/main.cpp)
+target_link_libraries(castalia-monitor PRIVATE castalia-ui)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-monitor PRIVATE -s)
+endif()

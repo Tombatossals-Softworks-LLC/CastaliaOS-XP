@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: magnifier (Lupa) — big sky-blue lens, sun-orange
+       handle (§8.4). Original artwork, Tombatossals Softworks.
+       Light source: top-left. -->
+  <defs>
+    <radialGradient id="mag-lens" cx="0.35" cy="0.3" r="0.95">
+      <stop offset="0" stop-color="#D2E3F5"/>
+      <stop offset="1" stop-color="#729FCF"/>
+    </radialGradient>
+    <linearGradient id="mag-handle" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FCAF3E"/>
+      <stop offset="1" stop-color="#F57900"/>
+    </linearGradient>
+  </defs>
+  <circle cx="20" cy="20" r="12" fill="url(#mag-lens)" opacity="0.9"/>
+  <circle cx="20" cy="20" r="14" fill="none"
+          stroke="#555753" stroke-width="3.6"/>
+  <circle cx="20" cy="20" r="12.2" fill="none"
+          stroke="#EEEEEC" stroke-width="1.2" opacity="0.8"/>
+  <path d="M 12.5 13.5 a 10 10 0 0 1 10 -2.8 l -1.8 4 a 5.5 5.5 0 0 0 -5.4 1.6 z"
+        fill="#FFFFFF" opacity="0.6"/>
+  <g transform="rotate(45 31 31)">
+    <rect x="28.6" y="29" width="5" height="16" rx="2.4"
+          fill="url(#mag-handle)" stroke="#CE5C00" stroke-width="1"/>
+  </g>
+</svg>

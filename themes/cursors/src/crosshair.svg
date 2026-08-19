@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <!-- Castalia cursor: crosshair (precision select). Hotspot 12,12.
+       Original artwork, Tombatossals Softworks. -->
+  <g stroke="#3E3028" stroke-width="3.2" stroke-linecap="round">
+    <path d="M 12 2.2 L 12 9"/>
+    <path d="M 12 15 L 12 21.8"/>
+    <path d="M 2.2 12 L 9 12"/>
+    <path d="M 15 12 L 21.8 12"/>
+  </g>
+  <g stroke="#FFFFFF" stroke-width="1.3" stroke-linecap="round">
+    <path d="M 12 3 L 12 8.4"/>
+    <path d="M 12 15.6 L 12 21"/>
+    <path d="M 3 12 L 8.4 12"/>
+    <path d="M 15.6 12 L 21 12"/>
+  </g>
+</svg>

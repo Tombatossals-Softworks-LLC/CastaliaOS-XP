@@ -1,0 +1,5 @@
+add_executable(castalia-multimedia src/main.cpp)
+target_link_libraries(castalia-multimedia PRIVATE castalia-ui)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-multimedia PRIVATE -s)
+endif()

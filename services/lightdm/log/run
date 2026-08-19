@@ -1,0 +1,3 @@
+#!/bin/sh
+# plain-text logs with rotation (Bible §6.14) — no binary journal.
+exec svlogd -tt /var/log/castalia/lightdm

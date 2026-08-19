@@ -1,0 +1,66 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="768" viewBox="0 0 1024 768" preserveAspectRatio="xMidYMid slice">
+  <!--
+    Castalia wallpaper: "Human Dawn" (the Human theme's desktop).
+    First light over baked earth: a deep chocolate field warmed by a rising
+    sun-orange glow, quiet dawn arcs, and the Castalia keep on the ridge.
+    Original artwork by Tombatossals Softworks — no Microsoft or Canonical
+    asset referenced. Shipped raster sizes are baked from this source.
+  -->
+  <defs>
+    <linearGradient id="earth" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0"    stop-color="#1F1712"/>
+      <stop offset="0.45" stop-color="#3A2A1E"/>
+      <stop offset="0.8"  stop-color="#5A3A20"/>
+      <stop offset="1"    stop-color="#6E4423"/>
+    </linearGradient>
+    <radialGradient id="dawn" cx="0.5" cy="0.78" r="0.75">
+      <stop offset="0"    stop-color="#F57900" stop-opacity="0.85"/>
+      <stop offset="0.35" stop-color="#D2610A" stop-opacity="0.5"/>
+      <stop offset="0.7"  stop-color="#8F4A0F" stop-opacity="0.18"/>
+      <stop offset="1"    stop-color="#8F4A0F" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="core" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0"   stop-color="#FFD9A0" stop-opacity="0.9"/>
+      <stop offset="0.5" stop-color="#FCAF3E" stop-opacity="0.45"/>
+      <stop offset="1"   stop-color="#FCAF3E" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- baked-earth field -->
+  <rect x="0" y="0" width="1024" height="768" fill="url(#earth)"/>
+
+  <!-- the dawn glow, low on the field -->
+  <rect x="0" y="0" width="1024" height="768" fill="url(#dawn)"/>
+  <ellipse cx="512" cy="600" rx="300" ry="180" fill="url(#core)"/>
+
+  <!-- quiet dawn arcs rising from the glow -->
+  <g fill="none" stroke-linecap="round">
+    <path d="M 92 700 A 470 470 0 0 1 932 700"
+          stroke="#FCAF3E" stroke-width="3" opacity="0.20"/>
+    <path d="M 172 712 A 380 380 0 0 1 852 712"
+          stroke="#FCAF3E" stroke-width="3" opacity="0.30"/>
+    <path d="M 252 724 A 295 295 0 0 1 772 724"
+          stroke="#FFD9A0" stroke-width="3" opacity="0.38"/>
+    <path d="M 60 240 Q 512 120 964 240"
+          stroke="#FFFFFF" stroke-width="2" opacity="0.05"/>
+    <path d="M 30 330 Q 512 210 994 330"
+          stroke="#FFFFFF" stroke-width="2" opacity="0.04"/>
+  </g>
+
+  <!-- the ridge, and the Castalia keep silhouetted against the glow -->
+  <path d="M 0 768 L 0 726 Q 256 700 512 706 Q 768 712 1024 694 L 1024 768 Z"
+        fill="#241812"/>
+  <g fill="#1B110C">
+    <rect x="120" y="646" width="34" height="66"/>
+    <rect x="120" y="636" width="8" height="12"/>
+    <rect x="133" y="636" width="8" height="12"/>
+    <rect x="146" y="636" width="8" height="12"/>
+    <rect x="154" y="682" width="40" height="32"/>
+    <rect x="154" y="674" width="7" height="10"/>
+    <rect x="166" y="674" width="7" height="10"/>
+    <rect x="178" y="674" width="7" height="10"/>
+    <rect x="187" y="674" width="7" height="10"/>
+  </g>
+  <!-- one warm lit window in the keep -->
+  <rect x="133" y="664" width="6" height="9" fill="#FCAF3E" opacity="0.95"/>
+</svg>

@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480">
+  <!--
+    Castalia boot splash — canonical static frame (Project Bible §8.6, §21.2).
+    Framebuffer-safe at 640×480; raster targets are baked from this source.
+    Original artwork by Tombatossals Softworks. The animated choreography is
+    specified in branding/boot/README.md and demonstrated in
+    docs/boot-preview.html.
+  -->
+  <defs>
+    <radialGradient id="bglow" cx="0.5" cy="0.42" r="0.65">
+      <stop offset="0" stop-color="#16344E"/>
+      <stop offset="0.6" stop-color="#0D1D2E"/>
+      <stop offset="1" stop-color="#0A141F"/>
+    </radialGradient>
+    <linearGradient id="bprog" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#2C6699"/>
+      <stop offset="1" stop-color="#3E82B6"/>
+    </linearGradient>
+    <linearGradient id="mk-ring" x1="0.15" y1="0" x2="0.6" y2="1">
+          <stop offset="0" stop-color="#5AA0DC"/>
+          <stop offset="0.55" stop-color="#3B7CC4"/>
+          <stop offset="1" stop-color="#2A5FA0"/>
+        </linearGradient>
+        <linearGradient id="mk-stone" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#87BEEC"/>
+          <stop offset="0.45" stop-color="#5A98D6"/>
+          <stop offset="1" stop-color="#3A72B4"/>
+        </linearGradient>
+        <linearGradient id="mk-stoneDark" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#5A98D6"/>
+          <stop offset="1" stop-color="#2F5F9B"/>
+        </linearGradient>
+        <linearGradient id="mk-roof" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#F26A52"/>
+          <stop offset="1" stop-color="#C9281C"/>
+        </linearGradient>
+        <linearGradient id="mk-hillBack" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#8ECC57"/>
+          <stop offset="1" stop-color="#5DA634"/>
+        </linearGradient>
+        <linearGradient id="mk-hillFront" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#6FBC41"/>
+          <stop offset="1" stop-color="#3D8724"/>
+        </linearGradient>
+  </defs>
+
+  <rect width="640" height="480" fill="url(#bglow)"/>
+
+  <!-- the Castalia mark, centred, 3× the 48-grid master
+       (branding/logo/castalia-mark.svg — same geometry, ids prefixed) -->
+  <g transform="translate(248,132) scale(3)">
+    <!-- ── the C: a thick ring with a 70° bite out of the right side ──────── -->
+      <path d="M 42.52 11.04
+               A 22.6 22.6 0 1 0 42.52 36.96
+               L 34.98 31.69
+               A 13.4 13.4 0 1 1 34.98 16.31 Z"
+            fill="url(#mk-ring)" stroke="#0E2C4E" stroke-width="1.7"
+            stroke-linejoin="round"/>
+
+      <!-- ── the keep, standing in the bowl of the C ────────────────────────── -->
+      <g transform="translate(2.9 1.7) scale(0.9)">
+        <!-- left turret: conical roof over a slim tower -->
+        <g stroke="#0E2C4E" stroke-width="1.5" stroke-linejoin="round">
+          <rect x="9.6" y="15" width="6.8" height="21" fill="url(#mk-stoneDark)"/>
+          <path d="M 13 5.6 L 17.8 15.6 L 8.2 15.6 Z" fill="url(#mk-roof)"/>
+        </g>
+        <path d="M 11.4 21.8 a 1.6 1.6 0 0 1 3.2 0 L 14.6 26.6 L 11.4 26.6 Z"
+              fill="#FFB020" stroke="#0E2C4E" stroke-width="1"/>
+
+        <!-- main keep: crenellated tower, lit window, arched door -->
+        <g stroke="#0E2C4E" stroke-width="1.5" stroke-linejoin="round">
+          <rect x="15.2" y="10" width="11.2" height="26" fill="url(#mk-stone)"/>
+          <rect x="15.2" y="6.4" width="3" height="4.4" fill="url(#mk-stone)"/>
+          <rect x="19.3" y="6.4" width="3" height="4.4" fill="url(#mk-stone)"/>
+          <rect x="23.4" y="6.4" width="3" height="4.4" fill="url(#mk-stone)"/>
+        </g>
+        <path d="M 18.7 14 a 2.1 2.1 0 0 1 4.2 0 L 22.9 19.4 L 18.7 19.4 Z"
+              fill="#FFB020" stroke="#0E2C4E" stroke-width="1"/>
+        <path d="M 17.8 36 L 17.8 27.4 a 3 3 0 0 1 6 0 L 23.8 36 Z"
+              fill="#F79300" stroke="#0E2C4E" stroke-width="1.3"/>
+        <path d="M 19.3 36 L 19.3 28 a 1.5 1.5 0 0 1 3 0 L 22.3 36 Z"
+              fill="#FFD27A" opacity="0.85"/>
+
+        <!-- right turret: the smaller cone, set back on the ridge -->
+        <g stroke="#0E2C4E" stroke-width="1.5" stroke-linejoin="round">
+          <rect x="26.2" y="22" width="5.8" height="14" fill="url(#mk-stoneDark)"/>
+          <path d="M 29.1 14 L 33.4 22.6 L 24.8 22.6 Z" fill="url(#mk-roof)"/>
+        </g>
+        <path d="M 27.7 27.4 a 1.4 1.4 0 0 1 2.8 0 L 30.5 31.6 L 27.7 31.6 Z"
+              fill="#FFB020" stroke="#0E2C4E" stroke-width="1"/>
+
+        <!-- the lit edge of the keep -->
+        <path d="M 16.5 11 L 16.5 35" fill="none" stroke="#D6EAFF"
+              stroke-width="1.1" opacity="0.5" stroke-linecap="round"/>
+      </g>
+
+      <!-- ── the hills: each ends ON the badge circle and returns along it ──── -->
+      <path d="M 2.58 31.2 Q 13 26.6 24 30.4 Q 35 34.2 45.79 30
+               A 22.6 22.6 0 0 1 2.58 31.2 Z"
+            fill="url(#mk-hillBack)" stroke="#20571A" stroke-width="1.3"
+            stroke-linejoin="round"/>
+      <path d="M 4.15 34.8 Q 14 30.4 26 34.4 Q 38 38.4 44.17 34.2
+               A 22.6 22.6 0 0 1 4.15 34.8 Z"
+            fill="url(#mk-hillFront)" stroke="#20571A" stroke-width="1.3"
+            stroke-linejoin="round"/>
+  </g>
+
+  <!-- wordmark (rendered with a libre face when baked; text kept as source) -->
+  <text x="320" y="322" text-anchor="middle" fill="#E8E4DC"
+        font-family="sans-serif" font-size="34" font-weight="bold"
+        letter-spacing="6">CASTALIA</text>
+  <text x="320" y="346" text-anchor="middle" fill="#7FA6C4"
+        font-family="sans-serif" font-size="13" letter-spacing="3">CLASSIC</text>
+
+  <!-- slim progress: track + fill (static frame shows 62%) -->
+  <rect x="220" y="386" width="200" height="6" rx="3" fill="#132638"/>
+  <rect x="220" y="386" width="124" height="6" rx="3" fill="url(#bprog)"/>
+
+  <!-- credits + verbose hint -->
+  <text x="320" y="446" text-anchor="middle" fill="#4E6E88"
+        font-family="sans-serif" font-size="11">Tombatossals Softworks</text>
+  <text x="628" y="470" text-anchor="end" fill="#33506A"
+        font-family="sans-serif" font-size="10">Esc: arranque detallado</text>
+</svg>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: rich text (Escritor) — sheet with a drawn chocolate
+       capital and sun-orange rule (§8.4). The glyph is a path, not a font.
+       Original artwork, Tombatossals Softworks. Light source: top-left. -->
+  <defs>
+    <linearGradient id="rtx-sheet" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EEEEEC"/>
+    </linearGradient>
+  </defs>
+  <rect x="9" y="6" width="30" height="36" rx="1"
+        fill="url(#rtx-sheet)" stroke="#888A85" stroke-width="1"/>
+  <path d="M 15 24 L 21 9 L 27 24 M 17 20 h 8"
+        fill="none" stroke="#8F5902" stroke-width="3"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M 13 29 h 22" stroke="#F57900" stroke-width="2.5"
+        stroke-linecap="round"/>
+  <g stroke="#BABDB6" stroke-width="2" stroke-linecap="round">
+    <line x1="13" y1="34" x2="35" y2="34"/>
+    <line x1="13" y1="38.5" x2="27" y2="38.5"/>
+    <line x1="30" y1="12" x2="35" y2="12"/>
+    <line x1="30" y1="17" x2="35" y2="17"/>
+  </g>
+</svg>

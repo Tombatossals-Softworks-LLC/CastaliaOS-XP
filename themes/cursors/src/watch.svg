@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <!-- Castalia cursor: watch (busy) — sun-orange ring with white hands.
+       Hotspot 12,12. Original artwork, Tombatossals Softworks. -->
+  <circle cx="12" cy="12" r="8.6" fill="#F57900" stroke="#3E3028"
+          stroke-width="1.3"/>
+  <circle cx="12" cy="12" r="5.9" fill="none" stroke="#FFFFFF"
+          stroke-width="1" opacity="0.5"/>
+  <g stroke="#FFFFFF" stroke-width="1.9" stroke-linecap="round">
+    <path d="M 12 12 L 12 7.6"/>
+    <path d="M 12 12 L 15.3 13.6"/>
+  </g>
+</svg>

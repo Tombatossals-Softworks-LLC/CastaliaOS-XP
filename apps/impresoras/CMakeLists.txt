@@ -1,0 +1,5 @@
+add_executable(castalia-impresoras src/main.cpp)
+target_link_libraries(castalia-impresoras PRIVATE castalia-ui)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-impresoras PRIVATE -s)
+endif()

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: media player — charcoal screen, sun-orange play (§8.4).
+       Original artwork, Tombatossals Softworks. Light source: top-left. -->
+  <defs>
+    <linearGradient id="mpl-scr" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#555753"/>
+      <stop offset="1" stop-color="#2E3436"/>
+    </linearGradient>
+    <linearGradient id="mpl-play" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FCAF3E"/>
+      <stop offset="1" stop-color="#F57900"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="24" cy="42" rx="13" ry="2" fill="#2E3436" opacity="0.12"/>
+  <rect x="6" y="10" width="36" height="26" rx="3"
+        fill="url(#mpl-scr)" stroke="#2E3436" stroke-width="1.5"/>
+  <path d="M 8 12 h 15 l -15 8 z" fill="#FFFFFF" opacity="0.10"/>
+  <path d="M 20 17 L 31 23 L 20 29 Z" fill="url(#mpl-play)"
+        stroke="#CE5C00" stroke-width="1" stroke-linejoin="round"/>
+  <rect x="10" y="32" width="28" height="2" rx="1" fill="#888A85"/>
+  <rect x="10" y="32" width="12" height="2" rx="1" fill="#FCAF3E"/>
+  <rect x="18" y="38" width="12" height="3" rx="1.5"
+        fill="#D3D7CF" stroke="#888A85" stroke-width="1"/>
+</svg>

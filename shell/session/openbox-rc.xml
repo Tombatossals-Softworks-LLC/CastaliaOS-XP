@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Castalia OS — the Openbox configuration the desktop ships (Bible §7.6,
+  §7.7). Single source of truth: packages/mkdeb.sh and the ISO hook both
+  install this file to /etc/xdg/openbox/rc.xml, and
+  tools/tests/test_openbox_rc.py gates it, so the keyboard map cannot drift
+  between an installed system and a live image.
+
+  §7.7: "Global keyboard map (all rebindable): launch menu, Run, lock,
+  screenshot, show-desktop, switch workspace, volume/brightness keys,
+  Explorer, terminal. The OS is fully operable keyboard-only."
+
+  Apps are started through castalia-open so they inherit the session's asset
+  tree and active theme — launching them bare would give them the compiled-in
+  defaults and an unthemed window.
+-->
+<openbox_config xmlns="http://openbox.org/3.4/rc">
+  <theme>
+    <name>Castalia-human</name>
+    <titleLayout>NLIMC</titleLayout>
+    <keepBorder>yes</keepBorder>
+  </theme>
+  <desktops><number>1</number></desktops>
+
+  <keyboard>
+    <!-- Windows, as they were on every desktop of the era. -->
+    <keybind key="A-F4">
+      <action name="Close"/>
+    </keybind>
+    <!-- Alt+Tab, Alt+Shift+Tab and Alt+` are NOT bound here on purpose.
+         castalia-panel grabs them itself and shows Castalia's own switcher
+         (§7.6) — icons from the shared family, most-recently-used order.
+         X gives a key grab to the first client that asks, so binding them
+         here would take them away from the panel and put Openbox's own OSD
+         back on screen. -->
+    <keybind key="A-F7">
+      <action name="ToggleMaximize"/>
+    </keybind>
+    <keybind key="A-F9">
+      <action name="Iconify"/>
+    </keybind>
+    <keybind key="W-d">
+      <action name="ToggleShowDesktop"/>
+    </keybind>
+
+    <!-- Run (§7.7): the launch key + R, the ergonomic everyone knows. -->
+    <keybind key="W-r">
+      <action name="Execute">
+        <name>Ejecutar</name>
+        <command>castalia-open castalia-ejecutar</command>
+      </action>
+    </keybind>
+
+    <!-- Lock, straight away: nothing destructive, so no dialog (§7.6). -->
+    <keybind key="W-l">
+      <action name="Execute">
+        <name>Bloquear</name>
+        <command>castalia-open castalia-salir --action bloquear</command>
+      </action>
+    </keybind>
+
+    <!-- The session/power dialog, and the Task Manager on the reflex chord. -->
+    <keybind key="C-A-Delete">
+      <action name="Execute">
+        <name>Monitor del sistema</name>
+        <command>castalia-open castalia-monitor</command>
+      </action>
+    </keybind>
+    <keybind key="W-Escape">
+      <action name="Execute">
+        <name>Salir de Castalia</name>
+        <command>castalia-open castalia-salir</command>
+      </action>
+    </keybind>
+
+    <!-- Explorer, Terminal, Search, Help — the daily four. -->
+    <keybind key="W-e">
+      <action name="Execute">
+        <name>Castalia Explorer</name>
+        <command>castalia-open castalia-explorer</command>
+      </action>
+    </keybind>
+    <keybind key="W-t">
+      <action name="Execute">
+        <name>Terminal</name>
+        <command>castalia-open castalia-terminal</command>
+      </action>
+    </keybind>
+    <keybind key="W-f">
+      <action name="Execute">
+        <name>Buscar archivos</name>
+        <command>castalia-open castalia-buscar</command>
+      </action>
+    </keybind>
+    <keybind key="F1">
+      <action name="Execute">
+        <name>Centro de ayuda</name>
+        <command>castalia-open castalia-bienvenida</command>
+      </action>
+    </keybind>
+
+    <!-- Screenshot on the key that says so. -->
+    <keybind key="Print">
+      <action name="Execute">
+        <name>Captura de pantalla</name>
+        <command>castalia-open castalia-captura</command>
+      </action>
+    </keybind>
+
+    <!-- Media keys: the mixer, so the change is visible and undoable. On a
+         keyboard without them the same panel opens from the tray speaker. -->
+    <keybind key="XF86AudioRaiseVolume">
+      <action name="Execute">
+        <name>Control de volumen</name>
+        <command>castalia-open castalia-volumen</command>
+      </action>
+    </keybind>
+    <keybind key="XF86AudioLowerVolume">
+      <action name="Execute">
+        <name>Control de volumen</name>
+        <command>castalia-open castalia-volumen</command>
+      </action>
+    </keybind>
+    <keybind key="XF86AudioMute">
+      <action name="Execute">
+        <name>Control de volumen</name>
+        <command>castalia-open castalia-volumen</command>
+      </action>
+    </keybind>
+  </keyboard>
+</openbox_config>

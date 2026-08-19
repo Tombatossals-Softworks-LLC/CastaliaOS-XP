@@ -1,0 +1,57 @@
+# tests/apps.manifest — the canonical first-party app list for the QA suites
+# (Bible §9, §19). One line per app:
+#
+#   name|binary path under the build dir|live-run args|offscreen-render args
+#
+# * "live-run args" are used by tests/e2e/apps-live.sh, which launches the app
+#   under a real X server + Openbox and asserts it maps an EWMH window.
+# * "offscreen-render args" are used by tests/offscreen/render-all.sh, which
+#   adds --theme/--repo/--screenshot itself (matches the CI render gate).
+# Args may use single quotes; they are word-split with eval by the consumers.
+# The shell planes (panel/desktop) are driven separately by the harnesses.
+explorer|explorer/castalia-explorer|--demo|--demo
+buscar|apps/buscar/castalia-buscar||
+control-center|apps/control-center/castalia-control-center||
+notas|apps/text-editor/castalia-notas||
+calc|apps/calculator/castalia-calc||
+visor|apps/image-viewer/castalia-visor||
+multimedia|apps/multimedia/castalia-multimedia||
+wine|apps/wine-manager/castalia-wine||
+clasicos|apps/clasicos/castalia-clasicos||
+pintura|apps/paint/castalia-pintura||
+instalador|installer-gui/castalia-instalador|--page 3|--page 3
+recuperacion|recovery-gui/castalia-recuperacion|--demo|--demo
+diagnostico|apps/diagnostics/castalia-diagnostico|--tab rendimiento|--tab rendimiento
+bienvenida|apps/welcome/castalia-bienvenida||
+salvapantallas|apps/screensaver/castalia-salvapantallas|--mode ondas|--mode ondas
+archivador|apps/archiver/castalia-archivador|--demo|--demo
+terminal|apps/terminal/castalia-terminal|--run 'echo Castalia; ls --color=always'|--run 'echo Castalia; ls --color=always'
+monitor|apps/monitor/castalia-monitor||
+volumen|apps/volumen/castalia-volumen||
+captura|apps/screenshot/castalia-captura|--demo|--demo
+software|apps/software/castalia-software|--demo|--demo
+buscaminas|apps/buscaminas/castalia-buscaminas|--demo --level intermedio|--demo --level intermedio
+solitario|apps/solitario/castalia-solitario|--demo|--demo
+caracteres|apps/charmap/castalia-caracteres||
+escritor|apps/richtext/castalia-escritor|--demo|--demo
+adhesivas|apps/stickies/castalia-adhesivas|--demo|--demo
+reloj|apps/clock/castalia-reloj||
+calendario|apps/calendario/castalia-calendario|--date 2026-07-12|--date 2026-07-12
+fechahora|apps/fechahora/castalia-fechahora||
+usuarios|apps/usuarios/castalia-usuarios||
+papelera|apps/papelera/castalia-papelera|--demo|--demo
+impresoras|apps/impresoras/castalia-impresoras|--demo|--demo
+redes|apps/redes/castalia-redes|--demo|--demo
+acerca|apps/acerca/castalia-acerca||
+predeterminados|apps/predeterminados/castalia-predeterminados|--demo|--demo
+lupa|apps/magnifier/castalia-lupa|--demo|--demo
+teclado|apps/teclado/castalia-teclado||
+actualizaciones|apps/updates/castalia-actualizaciones|--demo|--demo
+salir|apps/salir/castalia-salir||
+ejecutar|apps/ejecutar/castalia-ejecutar||
+registros|apps/registros/castalia-registros|--demo|--demo
+notificaciones|apps/notificaciones/castalia-notificaciones|--historial|--demo
+servicios|apps/servicios/castalia-servicios|--demo|--demo
+hardware|apps/hardware/castalia-hardware|--demo|--demo
+discos|apps/discos/castalia-discos|--demo|--demo
+migrar|apps/migrar/castalia-migrar|--demo|--demo

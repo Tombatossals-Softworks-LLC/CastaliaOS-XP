@@ -1,0 +1,39 @@
+Castalia OS — live E2E + distribution evidence (Bible §7, §9, §13, §19)
+========================================================================
+
+Host     : Ubuntu 24.04 (Qt 5.15.13), Xvfb 1024x768x24, Openbox
+Runner   : sh tests/run.sh full           -> exit 0
+Result   : PASS — every tier green
+
+Tier results:
+
+    lint    ruff over tools/ installer/ recovery/          clean
+    unit    85 tests (QA tooling 55 + installer 19 + recovery 11)  OK
+    gates   theme-lint, provenance, theme/sound export, mkiso
+            dry-run x6 editions, mkdeb + mkrepo dry-run,
+            installer plan, Restore Points snapshot smoke   all OK
+    build   shell + 3 head-less self-tests                  OK
+    render  168 offscreen renders (28 frames x 6 themes)    no empty frame
+    e2e     desktop-smoke: taskbar-worthy windows = 3       PASS
+            apps-live:     25 passed, 0 failed              PASS
+            session-smoke: WM up -> desktop+dock mapped ->
+                           demo window -> panel killed and
+                           respawned by supervision ->
+                           clean SIGTERM logout             PASS
+
+Distribution proof (the same steps ci.yml's `package` job gates):
+
+    packages/mkdeb.sh        -> castalia-desktop_0.1.0_amd64.deb (952K)
+    apt-get install ./…deb   -> deps resolved, installed clean
+    castalia-calc --repo /usr/share/castalia --screenshot   non-empty PNG
+    castalia-notas --repo /opt/castalia/share/castalia      non-empty PNG
+                             (the greeter/xsessions fallback asset path)
+    build/mkrepo.sh          -> pool/ + dists/castalia/…/Packages + Release
+    apt-get update (file:, trusted=yes) -> apt-cache policy shows
+                             castalia-desktop 0.1.0 from the overlay repo
+
+Reproduce:
+
+    sh tests/run.sh full
+    make -C build shell deb repo
+    sudo apt install ./build/out/deb/castalia-desktop_*.deb

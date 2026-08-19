@@ -1,0 +1,67 @@
+# Castalia OS — live ISO boot menu (isolinux/vesamenu, Bible §14.1).
+#
+# This is the TEMPLATE build/mkiso.sh renders into every ISO. It used to be a
+# design document that nothing read — mkiso.sh wrote its own single-entry
+# config inline — which is how a live image shipped with no way to reach the
+# installer from the boot menu at all. If you change the menu, change it here.
+#
+# tools/boot_menu.py fills three placeholders (written here without their
+# delimiters, so this comment is not itself substituted):
+#   TITLE    the edition's LABEL, so the screen says which image this is
+#   APPEND   the kernel arguments every entry shares (boot=live + consoles)
+#   INSTALL  the install entries, or nothing for an edition that ships no
+#            installer (the lean boot-proof image) — a menu entry that
+#            cannot deliver what it promises is worse than no entry
+# INSTALL is filled first: the entries it splices in carry an APPEND of
+# their own.
+#
+# The first entry is the live desktop and it is the default: a live image you
+# have to configure before you can look at it is not a live image. Installing
+# is the second entry, and it boots the same live session with
+# castalia.installer=gui, so the installer opens on top of a desktop the user
+# can already see and try (§14.5).
+#
+# Menu labels are deliberately unaccented: vesamenu.c32 renders a single
+# 8-bit codepage and "Instalación" comes out mangled on some firmware.
+#
+# No memtest entry: we do not ship memtest86+.bin in /live, and an entry that
+# boots nothing is a bug report waiting to happen. Add both together or
+# neither.
+
+SERIAL 0 115200
+UI vesamenu.c32
+DEFAULT live
+TIMEOUT 100
+PROMPT 0
+
+MENU TITLE @TITLE@
+MENU BACKGROUND splash.png
+MENU RESOLUTION 640 480
+
+# colors: #AARRGGBB fg / bg (Castalia deep-sea + azure + sandstone)
+MENU COLOR screen       37;40 #00000000 #00000000 none
+MENU COLOR border       30;44 #00000000 #00000000 none
+MENU COLOR title        1;36;44 #FFE8E4DC #00000000 none
+MENU COLOR unsel        37;44 #FFDCEBF5 #00000000 none
+MENU COLOR sel          7;37;40 #FFFFFFFF #FF2C6699 all
+MENU COLOR hotkey       1;37;44 #FFD8C49A #00000000 none
+MENU COLOR hotsel       1;7;37;40 #FFD8C49A #FF2C6699 all
+MENU COLOR timeout_msg  37;40 #FF7FA6C4 #00000000 none
+MENU COLOR timeout      1;37;40 #FF3E82B6 #00000000 none
+MENU COLOR tabmsg       31;40 #FF4E6E88 #00000000 none
+
+MENU VSHIFT 10
+MENU ROWS 6
+MENU MARGIN 12
+MENU TABMSG  Tombatossals Softworks - pulsa Tab para editar opciones
+
+LABEL live
+    MENU LABEL ^Probar Castalia OS (sesion en vivo)
+    MENU DEFAULT
+    KERNEL /live/vmlinuz
+    APPEND initrd=/live/initrd.img @APPEND@ quiet
+@INSTALL@
+LABEL livesafe
+    MENU LABEL Sesion en vivo - graficos ^seguros (VESA)
+    KERNEL /live/vmlinuz
+    APPEND initrd=/live/initrd.img @APPEND@ nomodeset vga=788 quiet

@@ -1,0 +1,6 @@
+find_package(Threads REQUIRED)
+add_executable(castalia-diagnostico src/main.cpp)
+target_link_libraries(castalia-diagnostico PRIVATE castalia-ui Threads::Threads)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-diagnostico PRIVATE -s)
+endif()

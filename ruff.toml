@@ -1,0 +1,20 @@
+# Ruff configuration for Castalia OS tooling.
+#
+# The lint rule *selection* is pinned explicitly so `ruff check` is
+# deterministic no matter which ruff version CI installs. Ruff changes its
+# default rule set between releases (e.g. it later began enabling isort `I`,
+# flake8-executable `EXE`, and unused-`noqa` `RUF100` by default), which made
+# an unpinned CI drift red on code that was green the day before. Selecting
+# rules ourselves — the classic pyflakes + curated pycodestyle baseline this
+# project was written against — makes the gate reproducible and intentional.
+#
+# The companion version pin lives in .github/workflows/{ci,release}.yml; the
+# two together make linting fully deterministic.
+
+target-version = "py311"
+
+[lint]
+# pyflakes (F) + the pycodestyle import/statement/runtime subset. This is the
+# set the tree already satisfies; E402 stays enabled so the intentional
+# `# noqa: E402` markers on sys.path-shimmed test imports remain meaningful.
+select = ["E4", "E7", "E9", "F"]

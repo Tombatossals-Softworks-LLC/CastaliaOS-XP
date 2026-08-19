@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: home — chocolate roof, cream walls and the arched
+       sun-orange door echoing the Castalia mark (§8.4). Original artwork,
+       Tombatossals Softworks. Light source: top-left. -->
+  <defs>
+    <linearGradient id="hom-wall" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EEEEEC"/>
+      <stop offset="1" stop-color="#D3D7CF"/>
+    </linearGradient>
+    <linearGradient id="hom-roof" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E9B96E"/>
+      <stop offset="1" stop-color="#C17D11"/>
+    </linearGradient>
+    <linearGradient id="hom-door" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FCAF3E"/>
+      <stop offset="1" stop-color="#F57900"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="24" cy="41.5" rx="16" ry="2.4" fill="#2E3436" opacity="0.12"/>
+  <rect x="11" y="22" width="26" height="18" fill="url(#hom-wall)"
+        stroke="#888A85" stroke-width="1"/>
+  <path d="M 6 23 L 24 8 L 42 23 Z" fill="url(#hom-roof)"
+        stroke="#8F5902" stroke-width="1" stroke-linejoin="round"/>
+  <path d="M 20.5 40 L 20.5 31 a 3.5 3.5 0 0 1 7 0 L 27.5 40 Z"
+        fill="url(#hom-door)" stroke="#CE5C00" stroke-width="1"/>
+  <rect x="31" y="26" width="5" height="5" fill="#FCE94F"
+        stroke="#C4A000" stroke-width="1"/>
+  <rect x="12" y="26" width="5" height="5" fill="#FCE94F"
+        stroke="#C4A000" stroke-width="1"/>
+</svg>

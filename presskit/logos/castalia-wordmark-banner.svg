@@ -1,0 +1,124 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="140" viewBox="0 0 480 140">
+  <!--
+    Castalia login banner — the greeter's identity plate (Bible §6.6, §21.2).
+    A chocolate plate, the "dawn roundel" (sun rising over the Castalia keep,
+    drawn from the mark's geometry) and the wordmark. Original artwork by
+    Tombatossals Softworks — echoes the warmth of mid-2000s "human" desktops
+    without referencing any Microsoft or Canonical asset.
+    Wordmark text renders with DejaVu Sans (shipped on the base system).
+  -->
+  <defs>
+    <linearGradient id="ban-plate" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#5A473B"/>
+      <stop offset="1" stop-color="#32261F"/>
+    </linearGradient>
+    <radialGradient id="ban-sun" cx="0.5" cy="0.62" r="0.72">
+      <stop offset="0"    stop-color="#FFD9A0"/>
+      <stop offset="0.45" stop-color="#FCAF3E"/>
+      <stop offset="1"    stop-color="#F57900"/>
+    </radialGradient>
+    <linearGradient id="mk-ring" x1="0.15" y1="0" x2="0.6" y2="1">
+          <stop offset="0" stop-color="#5AA0DC"/>
+          <stop offset="0.55" stop-color="#3B7CC4"/>
+          <stop offset="1" stop-color="#2A5FA0"/>
+        </linearGradient>
+        <linearGradient id="mk-stone" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#87BEEC"/>
+          <stop offset="0.45" stop-color="#5A98D6"/>
+          <stop offset="1" stop-color="#3A72B4"/>
+        </linearGradient>
+        <linearGradient id="mk-stoneDark" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stop-color="#5A98D6"/>
+          <stop offset="1" stop-color="#2F5F9B"/>
+        </linearGradient>
+        <linearGradient id="mk-roof" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#F26A52"/>
+          <stop offset="1" stop-color="#C9281C"/>
+        </linearGradient>
+        <linearGradient id="mk-hillBack" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#8ECC57"/>
+          <stop offset="1" stop-color="#5DA634"/>
+        </linearGradient>
+        <linearGradient id="mk-hillFront" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#6FBC41"/>
+          <stop offset="1" stop-color="#3D8724"/>
+        </linearGradient>
+  </defs>
+
+  <rect x="2" y="2" width="476" height="136" rx="14"
+        fill="url(#ban-plate)" stroke="#1F1712" stroke-width="1.5"/>
+  <rect x="4.5" y="4.5" width="471" height="131" rx="12"
+        fill="none" stroke="#FFFFFF" stroke-width="1" opacity="0.12"/>
+
+  <!-- the Castalia mark on a dawn glow: the badge is the identity, the
+       warm halo behind it keeps the plate feeling like sunrise. The mark
+       is branding/logo/castalia-mark.svg at 2.03x (badge centred 72,70). -->
+  <circle cx="72" cy="70" r="52" fill="url(#ban-sun)" opacity="0.9"/>
+  <circle cx="72" cy="70" r="52" fill="none" stroke="#CE5C00"
+          stroke-width="2"/>
+  <g transform="translate(23.28 21.28) scale(2.03)">
+    <!-- ── the C: a thick ring with a 70° bite out of the right side ──────── -->
+      <path d="M 42.52 11.04
+               A 22.6 22.6 0 1 0 42.52 36.96
+               L 34.98 31.69
+               A 13.4 13.4 0 1 1 34.98 16.31 Z"
+            fill="url(#mk-ring)" stroke="#0E2C4E" stroke-width="1.7"
+            stroke-linejoin="round"/>
+
+      <!-- ── the keep, standing in the bowl of the C ────────────────────────── -->
+      <g transform="translate(2.9 1.7) scale(0.9)">
+        <!-- left turret: conical roof over a slim tower -->
+        <g stroke="#0E2C4E" stroke-width="1.5" stroke-linejoin="round">
+          <rect x="9.6" y="15" width="6.8" height="21" fill="url(#mk-stoneDark)"/>
+          <path d="M 13 5.6 L 17.8 15.6 L 8.2 15.6 Z" fill="url(#mk-roof)"/>
+        </g>
+        <path d="M 11.4 21.8 a 1.6 1.6 0 0 1 3.2 0 L 14.6 26.6 L 11.4 26.6 Z"
+              fill="#FFB020" stroke="#0E2C4E" stroke-width="1"/>
+
+        <!-- main keep: crenellated tower, lit window, arched door -->
+        <g stroke="#0E2C4E" stroke-width="1.5" stroke-linejoin="round">
+          <rect x="15.2" y="10" width="11.2" height="26" fill="url(#mk-stone)"/>
+          <rect x="15.2" y="6.4" width="3" height="4.4" fill="url(#mk-stone)"/>
+          <rect x="19.3" y="6.4" width="3" height="4.4" fill="url(#mk-stone)"/>
+          <rect x="23.4" y="6.4" width="3" height="4.4" fill="url(#mk-stone)"/>
+        </g>
+        <path d="M 18.7 14 a 2.1 2.1 0 0 1 4.2 0 L 22.9 19.4 L 18.7 19.4 Z"
+              fill="#FFB020" stroke="#0E2C4E" stroke-width="1"/>
+        <path d="M 17.8 36 L 17.8 27.4 a 3 3 0 0 1 6 0 L 23.8 36 Z"
+              fill="#F79300" stroke="#0E2C4E" stroke-width="1.3"/>
+        <path d="M 19.3 36 L 19.3 28 a 1.5 1.5 0 0 1 3 0 L 22.3 36 Z"
+              fill="#FFD27A" opacity="0.85"/>
+
+        <!-- right turret: the smaller cone, set back on the ridge -->
+        <g stroke="#0E2C4E" stroke-width="1.5" stroke-linejoin="round">
+          <rect x="26.2" y="22" width="5.8" height="14" fill="url(#mk-stoneDark)"/>
+          <path d="M 29.1 14 L 33.4 22.6 L 24.8 22.6 Z" fill="url(#mk-roof)"/>
+        </g>
+        <path d="M 27.7 27.4 a 1.4 1.4 0 0 1 2.8 0 L 30.5 31.6 L 27.7 31.6 Z"
+              fill="#FFB020" stroke="#0E2C4E" stroke-width="1"/>
+
+        <!-- the lit edge of the keep -->
+        <path d="M 16.5 11 L 16.5 35" fill="none" stroke="#D6EAFF"
+              stroke-width="1.1" opacity="0.5" stroke-linecap="round"/>
+      </g>
+
+      <!-- ── the hills: each ends ON the badge circle and returns along it ──── -->
+      <path d="M 2.58 31.2 Q 13 26.6 24 30.4 Q 35 34.2 45.79 30
+               A 22.6 22.6 0 0 1 2.58 31.2 Z"
+            fill="url(#mk-hillBack)" stroke="#20571A" stroke-width="1.3"
+            stroke-linejoin="round"/>
+      <path d="M 4.15 34.8 Q 14 30.4 26 34.4 Q 38 38.4 44.17 34.2
+               A 22.6 22.6 0 0 1 4.15 34.8 Z"
+            fill="url(#mk-hillFront)" stroke="#20571A" stroke-width="1.3"
+            stroke-linejoin="round"/>
+  </g>
+
+  <!-- wordmark -->
+  <text x="140" y="78" font-family="DejaVu Sans, sans-serif" font-size="44"
+        font-weight="bold" fill="#FFFFFF" letter-spacing="1">CASTALIA</text>
+  <text x="142" y="106" font-family="DejaVu Sans, sans-serif" font-size="19"
+        fill="#FCAF3E">el escritorio con calidez humana</text>
+  <text x="440" y="34" font-family="DejaVu Sans, sans-serif" font-size="15"
+        font-weight="bold" fill="#FFFFFF" opacity="0.75"
+        text-anchor="end">OS</text>
+</svg>

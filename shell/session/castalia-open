@@ -1,0 +1,48 @@
+#!/bin/sh
+# castalia-open — launch a first-party app with the session's theme and
+# asset tree (Bible §6.16, §7.7).
+#
+# Every Castalia app takes `--repo` (where the themes/icons live) and
+# `--theme` (which one to wear). The panel's Start Menu fills them in from
+# its environment, but anything that launches an app *without* going through
+# the panel — the global keyboard map in Openbox's rc.xml, a .desktop entry,
+# a script — would otherwise get the compiled-in defaults ("." and classic)
+# and come up unthemed, or worse, unable to find its icons.
+#
+# This is that missing one-liner. It resolves the same way castalia-session
+# does, then execs the app with the flags already in place:
+#
+#     castalia-open castalia-ejecutar [extra args...]
+#
+# POSIX sh only (Bible §12): no bashisms, auditable in one read.
+
+set -u
+
+if [ $# -lt 1 ]; then
+    printf 'usage: castalia-open <castalia-app> [args...]\n' >&2
+    exit 2
+fi
+
+PREFIX="${CASTALIA_PREFIX:-/opt/castalia}"
+REPO="${CASTALIA_REPO:-$PREFIX/share/castalia}"
+
+# The active theme, resolved exactly as the session does: the user's choice,
+# then the system default, then classic. Reading it here (rather than
+# trusting CASTALIA_THEME) means an app launched by a hotkey picks up a theme
+# changed in the Control Center without waiting for the next login.
+theme_from() {
+    [ -r "$1" ] && sed -n 's/^[[:space:]]*id[[:space:]]*=[[:space:]]*"\(.*\)".*/\1/p' "$1" | head -n 1
+}
+THEME="$(theme_from "$HOME/.config/castalia/theme.conf")"
+[ -n "${THEME:-}" ] || THEME="$(theme_from /etc/castalia/theme.conf)"
+[ -n "${THEME:-}" ] || THEME="${CASTALIA_THEME:-classic}"
+
+APP="$1"
+shift
+
+# Prefer the installed prefix, fall back to whatever is on PATH.
+if [ -x "$PREFIX/bin/$APP" ]; then
+    APP="$PREFIX/bin/$APP"
+fi
+
+exec "$APP" --repo "$REPO" --theme "$THEME" "$@"

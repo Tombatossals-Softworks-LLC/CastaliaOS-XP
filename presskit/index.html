@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Castalia OS — Press Kit</title>
+<style>
+  :root{
+    --choco:#3E3028; --choco2:#5A473B; --orange:#F57900; --orange2:#FCAF3E;
+    --paper:#EFEBE7; --paper2:#E4DED4; --ink:#201A14; --ink2:#6B6156;
+    --border:#B7AA98; --card:#FFFFFF; --bg:#F4F1EC;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --paper:#241C16; --paper2:#2E241C; --ink:#EFE7DD; --ink2:#B7AA98;
+    --border:#4A3D31; --card:#2A211A; --bg:#1B1510;
+  }}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:'DejaVu Sans',system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    line-height:1.6}
+  a{color:var(--orange)}
+  code{background:var(--paper2);padding:1px 5px;border-radius:3px;font-size:.9em}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 22px}
+
+  header.hero{background:linear-gradient(160deg,var(--choco2),var(--choco));
+    color:#fff;padding:52px 0 44px;border-bottom:4px solid var(--orange)}
+  .hero .wrap{display:flex;gap:26px;align-items:center;flex-wrap:wrap}
+  .hero img.mark{width:104px;height:104px;flex:0 0 auto}
+  .hero h1{margin:0 0 6px;font-size:40px;letter-spacing:.5px}
+  .hero h1 span{color:var(--orange2)}
+  .hero p{margin:0;color:#F1E4D3;font-size:18px;max-width:640px}
+  .kicker{display:inline-block;margin-bottom:10px;font-size:12px;letter-spacing:2px;
+    text-transform:uppercase;color:var(--orange2)}
+
+  .factstrip{background:var(--choco);color:#F1E4D3;font-size:14px;
+    border-bottom:1px solid #000}
+  .factstrip .wrap{display:flex;flex-wrap:wrap;gap:8px 26px;padding:12px 22px}
+  .factstrip b{color:#fff}
+
+  section{padding:40px 0;border-bottom:1px solid var(--border)}
+  h2{font-size:26px;margin:0 0 4px;color:var(--ink)}
+  h2 .em{color:var(--orange)}
+  .sub{color:var(--ink2);margin:0 0 22px}
+  h3{font-size:17px;margin:22px 0 6px}
+
+  .lead{font-size:19px}
+  .grid{display:grid;gap:16px}
+  .g2{grid-template-columns:repeat(2,1fr)}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  @media(max-width:760px){.g2,.g3{grid-template-columns:1fr}}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:10px;
+    padding:16px 18px}
+  .card h3{margin-top:0}
+  .card p{margin:0;color:var(--ink2);font-size:15px}
+
+  .shots{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+  @media(max-width:760px){.shots{grid-template-columns:1fr}}
+  figure{margin:0;background:var(--card);border:1px solid var(--border);
+    border-radius:10px;overflow:hidden}
+  figure img{width:100%;display:block;background:#111}
+  figcaption{padding:10px 14px;font-size:13px;color:var(--ink2)}
+  .wide{grid-column:1/-1}
+
+  .themes{display:flex;flex-wrap:wrap;gap:10px}
+  .sw{display:flex;align-items:center;gap:8px;background:var(--card);
+    border:1px solid var(--border);border-radius:20px;padding:5px 12px 5px 6px;
+    font-size:13px}
+  .dot{width:22px;height:22px;border-radius:50%;border:1px solid rgba(0,0,0,.2)}
+
+  ul.feat{margin:0;padding-left:18px;color:var(--ink2)}
+  ul.feat li{margin:5px 0}
+  ul.feat b{color:var(--ink)}
+
+  .assets{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+  @media(max-width:760px){.assets{grid-template-columns:1fr}}
+  .assets a{display:block;background:var(--card);border:1px solid var(--border);
+    border-radius:8px;padding:10px 14px;text-decoration:none;color:var(--ink)}
+  .assets a b{color:var(--orange)}
+  .assets a span{display:block;color:var(--ink2);font-size:13px}
+
+  .cta{background:linear-gradient(160deg,var(--orange2),var(--orange));
+    color:#3a1e00;border-radius:12px;padding:26px 24px;text-align:center}
+  .cta h2{color:#3a1e00}
+  .cta a{color:#3a1e00;font-weight:bold}
+  footer{padding:30px 0 50px;color:var(--ink2);font-size:13px}
+  .pill{display:inline-block;background:var(--paper2);color:var(--ink2);
+    border-radius:20px;padding:3px 12px;font-size:12px;margin:2px 4px 2px 0}
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <img class="mark" src="logos/castalia-logo.png" alt="Castalia OS logo">
+    <div>
+      <span class="kicker">Press Kit · Developer Preview · July 2026</span>
+      <h1>Castalia OS <span>Human</span></h1>
+      <p>An original, XP-class desktop operating system that makes early- and
+      late-2000s PCs feel fast, modern and cared-for again — with zero
+      Microsoft code or artwork inside.</p>
+    </div>
+  </div>
+</header>
+
+<div class="factstrip"><div class="wrap">
+  <span><b>Developer:</b> Tombatossals Softworks</span>
+  <span><b>Creators:</b> Dave Abellán · Claudio di Castello</span>
+  <span><b>Status:</b> working preview, v0.1.0</span>
+  <span><b>Price:</b> free · open source</span>
+  <span><b>Boots from:</b> 512 MB RAM</span>
+  <span><b>Press:</b> hello@tombatossalssoftworks.com</span>
+</div></div>
+
+<section id="what"><div class="wrap">
+  <h2>The <span class="em">short</span> version</h2>
+  <p class="sub">Everything here is free to quote. Nothing is under embargo.</p>
+  <p class="lead">Castalia OS is not a theme pack and not a Windows clone. It's
+  a curated Linux distribution with its <b>own Qt/C++ desktop shell</b>,
+  <b>46 first-party applications</b>, a <b>seven-theme design system</b> and a
+  <b>managed Windows/DOS/ScummVM compatibility layer</b> — every pixel of it
+  original, built from scratch for the millions of Pentium 4- to Core 2-era PCs
+  that modern software abandoned. It boots, runs and recovers happily in
+  <b>512 MB of RAM</b>.</p>
+  <p><span class="pill">46 native apps</span><span class="pill">7 themes</span>
+  <span class="pill">40 original icons</span><span class="pill">9 original pointers</span><span class="pill">Qt 5.15 · C++17</span>
+  <span class="pill">Debian, de-systemd'd</span><span class="pill">amd64 + i386</span>
+  <span class="pill">MIT source</span><span class="pill">no Microsoft code</span></p>
+</div></section>
+
+<section id="shots"><div class="wrap">
+  <h2>See <span class="em">it</span></h2>
+  <p class="sub">Real captures from the software — offscreen renders and live
+  QEMU/X sessions, not mock-ups. There's also a ~63-second demo screencast in
+  <code>video/</code>. Full captions in <code>screenshots/CAPTIONS.md</code>.</p>
+  <div class="shots">
+    <figure class="wide"><img src="screenshots/01-desktop-human.png" alt="Castalia OS Human desktop">
+      <figcaption>The Castalia OS “Human” desktop — the hand-drawn “Human Dawn”
+      wallpaper, the tangerine icon set, and the taskbar with one-click quick launchers.</figcaption></figure>
+    <figure><img src="screenshots/02-start-menu-human.png" alt="Start Menu">
+      <figcaption>The categorised Start Menu — every entry with its own icon.</figcaption></figure>
+    <figure><img src="screenshots/03-control-center-themes.png" alt="Seven themes">
+      <figcaption>All seven themes from one token file; the choice re-skins the whole desktop.</figcaption></figure>
+    <figure><img src="screenshots/11-medianoche-dark-live.png" alt="Medianoche dark mode, live">
+      <figcaption>Medianoche dark mode, composed by a real window manager in a live session.</figcaption></figure>
+    <figure><img src="screenshots/12-windows-compat-wine.png" alt="Windows compatibility">
+      <figcaption>A real Win32 program under Wine, in a per-app sandbox — captured live.</figcaption></figure>
+    <figure><img src="screenshots/05-installer.png" alt="Installer">
+      <figcaption>The guided installer shows the exact plan and refuses to erase until you type the disk.</figcaption></figure>
+    <figure><img src="screenshots/07-diagnostics.png" alt="Diagnostics">
+      <figcaption>Diagnostics with a real CPU/RAM/disk/graphics/network benchmark suite.</figcaption></figure>
+    <figure class="wide"><img src="icons/icon-family-sheet.png" alt="Tangerine icon family">
+      <figcaption>The 40-icon tangerine family — original geometry on a single 48-px grid.</figcaption></figure>
+  </div>
+</div></section>
+
+<section id="themes"><div class="wrap">
+  <h2>One switch changes <span class="em">everything</span></h2>
+  <p class="sub">A single theme file drives the widgets, window frames, icons,
+  greeter and sounds together — and CI won't let a theme ship if its contrast
+  or its gradients are wrong.</p>
+  <div class="themes">
+    <span class="sw"><span class="dot" style="background:linear-gradient(180deg,#5A473B,#3E3028)"></span>Human</span>
+    <span class="sw"><span class="dot" style="background:linear-gradient(180deg,#3E82B6,#2C6699)"></span>Classic</span>
+    <span class="sw"><span class="dot" style="background:linear-gradient(180deg,#3f74a8,#28527d)"></span>Azul</span>
+    <span class="sw"><span class="dot" style="background:linear-gradient(180deg,#6f7d3a,#525d29)"></span>Oliva</span>
+    <span class="sw"><span class="dot" style="background:linear-gradient(180deg,#8f97a0,#6c737b)"></span>Plata</span>
+    <span class="sw"><span class="dot" style="background:linear-gradient(180deg,#2b3138,#20252b)"></span>Medianoche</span>
+    <span class="sw"><span class="dot" style="background:linear-gradient(180deg,#000,#000)"></span>High Contrast</span>
+  </div>
+</div></section>
+
+<section id="features"><div class="wrap">
+  <h2>What's <span class="em">inside</span></h2>
+  <div class="grid g3">
+    <div class="card"><h3>The desktop</h3><p>Original Qt shell: desktop plane,
+      EWMH taskbar, categorised Start Menu, Control Center, file manager. Event-driven,
+      not polling. Short, optional animations.</p></div>
+    <div class="card"><h3>46 applications</h3><p>Editor, rich text, paint, calc,
+      image viewer, terminal (own VT100), sticky notes, clock, magnifier, two games,
+      monitor, diagnostics, hardware center, disk manager, migration assistant,
+      and the system trio.</p></div>
+    <div class="card"><h3>Trust &amp; recovery</h3><p>Restore Points, an independent
+      recovery environment, an update centre that snapshots first, and an installer
+      that won't erase until you confirm.</p></div>
+    <div class="card"><h3>Compatibility</h3><p>Native-first; then a managed Wine
+      layer runs old Windows programs in per-app sandboxes. DOS &amp; ScummVM on the way.</p></div>
+    <div class="card"><h3>Legally clean</h3><p>No Microsoft code, branding, icons,
+      sounds or wallpapers. Every asset original or libre, tracked in a ledger CI enforces.</p></div>
+    <div class="card"><h3>Old-hardware first</h3><p>512 MB RAM floor for the <em>whole</em>
+      desktop. No compositor required. amd64 and i386 (SSE2).</p></div>
+  </div>
+</div></section>
+
+<section id="tech"><div class="wrap">
+  <h2>How it's <span class="em">built</span></h2>
+  <ul class="feat">
+    <li><b>Base:</b> Debian stable, de-systemd'd (runit · eudev · elogind).</li>
+    <li><b>Display:</b> Xorg + Openbox with generated Castalia decorations; no compositor required.</li>
+    <li><b>Toolkit:</b> Qt 5.15 LTS + C++17 for the shell and every app; POSIX sh for the supervised session; Python 3 for the tested installer &amp; Restore Points backends.</li>
+    <li><b>Design system:</b> one <code>theme.conf</code> → Qt QSS + Openbox theme + icons + greeter + sounds, with a CI linter enforcing WCAG contrast and 16-bit-safe gradients.</li>
+    <li><b>Verification:</b> four pipelines — per-commit (lint, units, design/legal gates, every app in every theme, a live end-to-end run under a real WM, and a .deb build-install-run gate), nightly ISO+QEMU boot, on-demand desktop ISO, and a tag-driven release.</li>
+  </ul>
+  <p class="sub" style="margin-top:16px">Full detail in <code>technical.md</code>.</p>
+</div></section>
+
+<section id="assets"><div class="wrap">
+  <h2>Grab the <span class="em">assets</span></h2>
+  <p class="sub">Logos, screenshots, wallpapers and the full press text are in
+  this folder. Need another format or a fresh capture? Just ask.</p>
+  <div class="assets">
+    <a href="logos/"><b>logos/</b><span>Mark &amp; wordmark — SVG + PNG, transparent and on-dark</span></a>
+    <a href="screenshots/"><b>screenshots/</b><span>18 curated PNGs (captions in CAPTIONS.md)</span></a>
+    <a href="wallpapers/"><b>wallpapers/</b><span>Six theme wallpapers — 2048 px PNG + SVG</span></a>
+    <a href="video/castalia-os-demo.mp4"><b>video/</b><span>~63 s demo screencast of a real session — MP4 + GIF</span></a>
+    <a href="icons/"><b>icons/</b><span>The 40-icon family — contact sheet + SVGs</span></a>
+    <a href="cursors/"><b>cursors/</b><span>The 9-pointer Xcursor family — contact sheet</span></a>
+    <a href="press-release.md"><b>press-release.md</b><span>The announcement, ready to reprint</span></a>
+    <a href="fact-sheet.md"><b>fact-sheet.md</b><span>The one-glance facts</span></a>
+    <a href="about.md"><b>about.md</b><span>Short / medium / long copy + features</span></a>
+    <a href="roadmap.md"><b>roadmap.md</b><span>Vision &amp; roadmap</span></a>
+    <a href="technical.md"><b>technical.md</b><span>The full stack &amp; architecture</span></a>
+    <a href="quotes-and-boilerplate.md"><b>quotes-and-boilerplate.md</b><span>Pull quotes &amp; boilerplate</span></a>
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <div class="cta">
+    <h2>Writing about Castalia OS?</h2>
+    <p style="max-width:620px;margin:6px auto 0">We're a small independent studio,
+    and coverage is how projects like this reach the people who need them. We'll get
+    you a build, a live demo or any imagery you need.</p>
+    <p style="margin:14px 0 0;font-size:18px"><a href="mailto:hello@tombatossalssoftworks.com">hello@tombatossalssoftworks.com</a>
+    &nbsp;·&nbsp; <a href="https://tombatossalssoftworks.com">tombatossalssoftworks.com</a></p>
+  </div>
+</div></section>
+
+<footer><div class="wrap">
+  <p>Castalia OS and all original artwork, code and design © 2026 Tombatossals
+  Softworks. Source under the MIT License. Text free to quote; images cleared for
+  editorial use in coverage of Castalia OS (see <code>CREDITS-and-LEGAL.md</code>).</p>
+  <p>Castalia OS is an independent project and is not affiliated with, endorsed by or
+  sponsored by Microsoft Corporation. Windows is a registered trademark of Microsoft
+  Corporation. No Microsoft code, branding, icons, sounds or wallpapers are used in
+  Castalia OS.</p>
+</div></footer>
+
+</body>
+</html>

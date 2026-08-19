@@ -1,0 +1,5 @@
+add_executable(castalia-solitario src/main.cpp)
+target_link_libraries(castalia-solitario PRIVATE castalia-ui)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-solitario PRIVATE -s)
+endif()

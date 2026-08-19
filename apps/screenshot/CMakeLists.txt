@@ -1,0 +1,5 @@
+add_executable(castalia-captura src/main.cpp)
+target_link_libraries(castalia-captura PRIVATE castalia-ui castalia-notify)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-captura PRIVATE -s)
+endif()

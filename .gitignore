@@ -1,0 +1,10 @@
+# Python tooling
+__pycache__/
+*.py[cod]
+.ruff_cache/
+
+# Build outputs (future)
+/build/out/
+*.deb
+*.iso
+*.exe

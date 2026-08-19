@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: services (Servicios del sistema) — three supervised
+       service rows, each with its own status lamp: running, running, stopped
+       (§8.4). Original artwork, Tombatossals Softworks.
+       Light source: top-left. -->
+  <defs>
+    <linearGradient id="svcRow" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F7F3EF"/>
+      <stop offset="1" stop-color="#DDD2C4"/>
+    </linearGradient>
+    <linearGradient id="svcLampOn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FCAF3E"/>
+      <stop offset="1" stop-color="#F57900"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="24" cy="43" rx="14" ry="2" fill="#2E3436" opacity="0.14"/>
+
+  <rect x="6" y="9" width="36" height="9.5" rx="2.4" fill="url(#svcRow)"
+        stroke="#8A7A68" stroke-width="1.2"/>
+  <circle cx="12.5" cy="13.75" r="2.6" fill="url(#svcLampOn)"
+          stroke="#CE5C00" stroke-width="0.9"/>
+  <rect x="18" y="12.4" width="19" height="2.7" rx="1.35" fill="#5A473B"
+        opacity="0.62"/>
+
+  <rect x="6" y="19.25" width="36" height="9.5" rx="2.4" fill="url(#svcRow)"
+        stroke="#8A7A68" stroke-width="1.2"/>
+  <circle cx="12.5" cy="24" r="2.6" fill="url(#svcLampOn)"
+          stroke="#CE5C00" stroke-width="0.9"/>
+  <rect x="18" y="22.65" width="15" height="2.7" rx="1.35" fill="#5A473B"
+        opacity="0.62"/>
+
+  <rect x="6" y="29.5" width="36" height="9.5" rx="2.4" fill="url(#svcRow)"
+        stroke="#8A7A68" stroke-width="1.2"/>
+  <circle cx="12.5" cy="34.25" r="2.6" fill="#CFC4B6" stroke="#8A7A68"
+          stroke-width="0.9"/>
+  <rect x="18" y="32.9" width="17" height="2.7" rx="1.35" fill="#5A473B"
+        opacity="0.32"/>
+
+  <path d="M 7.4 10.4 h 33.2" stroke="#FFFFFF" stroke-width="1.1"
+        stroke-linecap="round" opacity="0.75"/>
+  <path d="M 7.4 20.65 h 33.2" stroke="#FFFFFF" stroke-width="1.1"
+        stroke-linecap="round" opacity="0.75"/>
+  <path d="M 7.4 30.9 h 33.2" stroke="#FFFFFF" stroke-width="1.1"
+        stroke-linecap="round" opacity="0.75"/>
+</svg>

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+  <!-- Castalia cursor: left_ptr (the default pointer) — white body, chocolate
+       outline, matching the Human look (Bible §8.4). Hotspot 1,1.
+       Original artwork, Tombatossals Softworks. -->
+  <path d="M 2 1.6 L 2 17.8 L 6.3 13.9 L 8.9 20.1 L 11.6 18.9 L 9.1 12.9
+           L 14.2 12.9 Z"
+        fill="#FFFFFF" stroke="#3E3028" stroke-width="1.3"
+        stroke-linejoin="round"/>
+</svg>

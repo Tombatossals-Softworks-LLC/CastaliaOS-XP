@@ -1,0 +1,120 @@
+# Castalia sound palette — specification as data (Project Bible §21.4).
+#
+# One short, warm motif unifies every system sound: a rising E–G#–B arpeggio
+# in E Phrygian dominant (E F G# A B C D) — the "Spanish" mode, giving the
+# palette its Mediterranean tint through the F and C color tones (heard in
+# the error sound's minor-second bite).
+#
+# tools/sound_gen.py renders this file deterministically to
+# branding/sound/wav/*.wav and the docs/sound-preview.html board.
+# All sounds are original compositions by Tombatossals Softworks.
+
+[global]
+samplerate = 44100
+bit_depth = 16
+channels = 1
+peak_dbfs = -3.0          # normalization target
+max_duration_s = 2.0      # Bible §8.6: every sound <= ~2 s
+mode = "E Phrygian dominant"
+motif = ["E4", "G#4", "B4"]
+
+[notes]
+"E3"  = 164.81
+"B3"  = 246.94
+"E4"  = 329.63
+"F4"  = 349.23
+"G#4" = 415.30
+"A4"  = 440.00
+"B4"  = 493.88
+"C5"  = 523.25
+"D5"  = 587.33
+"E5"  = 659.26
+"B5"  = 987.77
+
+# ---------------------------------------------------------------- sounds ---
+
+[[sound]]
+id = "startup"
+name = "Inicio"
+when = "Session start (greeter → desktop)"
+description = "Warm pad swell under the rising motif, crowned an octave up."
+duration = 1.8
+events = [
+  { note = "E3",  at = 0.00, dur = 1.60, level = 0.35, type = "pad" },
+  { note = "E4",  at = 0.10, dur = 1.20, level = 0.60, type = "pluck" },
+  { note = "G#4", at = 0.30, dur = 1.10, level = 0.60, type = "pluck" },
+  { note = "B4",  at = 0.50, dur = 1.00, level = 0.60, type = "pluck" },
+  { note = "E5",  at = 0.78, dur = 0.95, level = 0.55, type = "pluck" },
+]
+
+[[sound]]
+id = "shutdown"
+name = "Apagado"
+when = "Session end / power off"
+description = "The motif descends home and resolves onto the low pad."
+duration = 1.6
+events = [
+  { note = "E5",  at = 0.00, dur = 0.80, level = 0.50, type = "pluck" },
+  { note = "B4",  at = 0.22, dur = 0.85, level = 0.55, type = "pluck" },
+  { note = "G#4", at = 0.44, dur = 0.90, level = 0.55, type = "pluck" },
+  { note = "E4",  at = 0.66, dur = 0.90, level = 0.60, type = "pluck" },
+  { note = "E3",  at = 0.66, dur = 0.90, level = 0.30, type = "pad" },
+]
+
+[[sound]]
+id = "notify"
+name = "Notificación"
+when = "Toast / message arrives"
+description = "Two soft notes, question-and-answer, deliberately quiet."
+duration = 0.55
+events = [
+  { note = "B4", at = 0.00, dur = 0.35, level = 0.45, type = "pluck" },
+  { note = "E5", at = 0.12, dur = 0.40, level = 0.40, type = "pluck" },
+]
+
+[[sound]]
+id = "error"
+name = "Error"
+when = "Blocking error dialog"
+description = "The Phrygian bite: F against E's world — clear, brief, never harsh."
+duration = 0.7
+events = [
+  { note = "F4", at = 0.00, dur = 0.30, level = 0.55, type = "pluck" },
+  { note = "C5", at = 0.00, dur = 0.30, level = 0.40, type = "pluck" },
+  { note = "F4", at = 0.18, dur = 0.45, level = 0.50, type = "pluck" },
+  { note = "C5", at = 0.18, dur = 0.45, level = 0.35, type = "pluck" },
+]
+
+[[sound]]
+id = "device-in"
+name = "Dispositivo conectado"
+when = "USB / media inserted"
+description = "A rising fifth — something arrived."
+duration = 0.45
+events = [
+  { note = "E4", at = 0.00, dur = 0.28, level = 0.50, type = "pluck" },
+  { note = "B4", at = 0.10, dur = 0.32, level = 0.50, type = "pluck" },
+]
+
+[[sound]]
+id = "device-out"
+name = "Dispositivo retirado"
+when = "USB / media removed"
+description = "The same fifth, falling — safely gone."
+duration = 0.45
+events = [
+  { note = "B4", at = 0.00, dur = 0.28, level = 0.50, type = "pluck" },
+  { note = "E4", at = 0.10, dur = 0.32, level = 0.50, type = "pluck" },
+]
+
+[[sound]]
+id = "empty-trash"
+name = "Papelera vaciada"
+when = "Recycle bin emptied"
+description = "A light downward sweep — three quick steps home."
+duration = 0.7
+events = [
+  { note = "E5", at = 0.00, dur = 0.25, level = 0.45, type = "pluck" },
+  { note = "B4", at = 0.10, dur = 0.28, level = 0.45, type = "pluck" },
+  { note = "E4", at = 0.20, dur = 0.42, level = 0.50, type = "pluck" },
+]

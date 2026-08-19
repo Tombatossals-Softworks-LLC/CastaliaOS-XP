@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: sticky notes — butter note, curled corner (§8.4).
+       Original artwork, Tombatossals Softworks. Light source: top-left. -->
+  <defs>
+    <linearGradient id="stk-note" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FCE94F"/>
+      <stop offset="1" stop-color="#EDD400"/>
+    </linearGradient>
+    <linearGradient id="stk-curl" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#FFF7B2"/>
+      <stop offset="1" stop-color="#EDD400"/>
+    </linearGradient>
+  </defs>
+  <g transform="rotate(-4 24 24)">
+    <ellipse cx="25" cy="41" rx="14" ry="2" fill="#2E3436" opacity="0.14"/>
+    <path d="M 9 8 h 30 v 22 l -8 8 H 9 Z"
+          fill="url(#stk-note)" stroke="#C4A000" stroke-width="1"/>
+    <path d="M 39 30 l -8 8 v -8 z" fill="url(#stk-curl)"
+          stroke="#C4A000" stroke-width="1" stroke-linejoin="round"/>
+    <g stroke="#C4A000" stroke-width="2" stroke-linecap="round" opacity="0.8">
+      <line x1="14" y1="16" x2="34" y2="16"/>
+      <line x1="14" y1="22" x2="34" y2="22"/>
+      <line x1="14" y1="28" x2="26" y2="28"/>
+    </g>
+  </g>
+</svg>

@@ -1,0 +1,8 @@
+[Desktop Entry]
+# xsessions entry — how the greeter launches Castalia (Bible §6.6).
+Name=Castalia Classic
+Comment=Escritorio Castalia
+Exec=castalia-session
+TryExec=castalia-session
+Type=XSession
+DesktopNames=Castalia

@@ -1,0 +1,5 @@
+add_executable(castalia-discos src/main.cpp)
+target_link_libraries(castalia-discos PRIVATE castalia-ui)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-discos PRIVATE -s)
+endif()

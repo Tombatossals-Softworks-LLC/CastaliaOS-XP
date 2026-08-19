@@ -1,0 +1,5 @@
+add_executable(castalia-escritor src/main.cpp)
+target_link_libraries(castalia-escritor PRIVATE castalia-ui)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-escritor PRIVATE -s)
+endif()

@@ -1,0 +1,5 @@
+add_executable(castalia-registros src/main.cpp)
+target_link_libraries(castalia-registros PRIVATE castalia-ui)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-registros PRIVATE -s)
+endif()

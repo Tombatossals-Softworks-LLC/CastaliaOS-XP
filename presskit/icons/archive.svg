@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: archive — chocolate box with zip strip and sun-orange
+       pull (§8.4). Original artwork, Tombatossals Softworks.
+       Light source: top-left. -->
+  <defs>
+    <linearGradient id="arc-box" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E9B96E"/>
+      <stop offset="1" stop-color="#C17D11"/>
+    </linearGradient>
+    <linearGradient id="arc-lid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F5D9A8"/>
+      <stop offset="1" stop-color="#E9B96E"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="24" cy="42" rx="15" ry="2.2" fill="#2E3436" opacity="0.14"/>
+  <rect x="8" y="14" width="32" height="26" rx="2"
+        fill="url(#arc-box)" stroke="#8F5902" stroke-width="1"/>
+  <rect x="6" y="8" width="36" height="8" rx="2"
+        fill="url(#arc-lid)" stroke="#8F5902" stroke-width="1"/>
+  <g fill="#8F5902">
+    <rect x="21.5" y="16" width="5" height="4" rx="1"/>
+    <rect x="21.5" y="22" width="5" height="4" rx="1"/>
+    <rect x="21.5" y="28" width="5" height="4" rx="1"/>
+  </g>
+  <rect x="20" y="33" width="8" height="5" rx="1"
+        fill="#F57900" stroke="#CE5C00" stroke-width="1"/>
+</svg>

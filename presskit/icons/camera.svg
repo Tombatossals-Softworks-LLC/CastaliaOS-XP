@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: camera (Captura de pantalla) — charcoal body, sky-blue
+       lens, sun-orange shutter (§8.4). Original artwork, Tombatossals
+       Softworks. Light source: top-left. -->
+  <defs>
+    <linearGradient id="cam-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#555753"/>
+      <stop offset="1" stop-color="#2E3436"/>
+    </linearGradient>
+    <radialGradient id="cam-lens" cx="0.35" cy="0.3" r="0.95">
+      <stop offset="0" stop-color="#729FCF"/>
+      <stop offset="1" stop-color="#204A87"/>
+    </radialGradient>
+  </defs>
+  <ellipse cx="24" cy="41" rx="15" ry="2.2" fill="#2E3436" opacity="0.14"/>
+  <path d="M 17 11 l 3 -4 h 8 l 3 4 z" fill="#555753"
+        stroke="#2E3436" stroke-width="1"/>
+  <rect x="7" y="11" width="34" height="27" rx="3.5"
+        fill="url(#cam-body)" stroke="#2E3436" stroke-width="1"/>
+  <path d="M 9 13 h 30 v 4 h -30 z" fill="#FFFFFF" opacity="0.10"/>
+  <circle cx="24" cy="25" r="9" fill="#BABDB6"
+          stroke="#888A85" stroke-width="1"/>
+  <circle cx="24" cy="25" r="6.6" fill="url(#cam-lens)"
+          stroke="#2E3436" stroke-width="1"/>
+  <circle cx="21.6" cy="22.6" r="2" fill="#FFFFFF" opacity="0.7"/>
+  <rect x="10" y="14" width="7" height="4.5" rx="2"
+        fill="#F57900" stroke="#CE5C00" stroke-width="1"/>
+  <circle cx="36" cy="17" r="1.8" fill="#FCE94F"/>
+</svg>

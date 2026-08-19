@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: character map — glyph tiles, one selected in sun
+       orange (§8.4). Glyph shapes are paths, not fonts. Original artwork,
+       Tombatossals Softworks. Light source: top-left. -->
+  <defs>
+    <linearGradient id="chm-sel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FCAF3E"/>
+      <stop offset="1" stop-color="#F57900"/>
+    </linearGradient>
+  </defs>
+  <rect x="6" y="6" width="36" height="36" rx="2"
+        fill="#FFFFFF" stroke="#888A85" stroke-width="1"/>
+  <g fill="#F7F7F5" stroke="#BABDB6" stroke-width="1">
+    <rect x="9.5"  y="9.5"  width="13" height="13" rx="1"/>
+    <rect x="25.5" y="9.5"  width="13" height="13" rx="1"/>
+    <rect x="25.5" y="25.5" width="13" height="13" rx="1"/>
+  </g>
+  <rect x="9.5" y="25.5" width="13" height="13" rx="1"
+        fill="url(#chm-sel)" stroke="#CE5C00" stroke-width="1"/>
+  <!-- drawn glyph strokes: A-like, o-like, tilde, e-like -->
+  <path d="M 13 19.5 L 16 12.5 L 19 19.5 M 14.2 17.5 h 3.6"
+        fill="none" stroke="#555753" stroke-width="1.8"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="32" cy="16.5" r="3.2" fill="none"
+          stroke="#555753" stroke-width="1.8"/>
+  <path d="M 12.5 32 q 1.8 -2.4 3.5 0 t 3.5 0"
+        fill="none" stroke="#FFFFFF" stroke-width="2"
+        stroke-linecap="round"/>
+  <path d="M 29 32 h 5.5 a 3 3 0 1 0 -1 2.8"
+        fill="none" stroke="#555753" stroke-width="1.8"
+        stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: package (Centro de software) — chocolate parcel with
+       butter tape (§8.4). Original artwork, Tombatossals Softworks.
+       Light source: top-left. -->
+  <defs>
+    <linearGradient id="pkg-front" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E9B96E"/>
+      <stop offset="1" stop-color="#C17D11"/>
+    </linearGradient>
+    <linearGradient id="pkg-side" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C17D11"/>
+      <stop offset="1" stop-color="#8F5902"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="24" cy="42.5" rx="16" ry="2.4" fill="#2E3436" opacity="0.14"/>
+  <path d="M 8 16 L 24 9 L 40 16 L 24 23 Z" fill="#F5D9A8"
+        stroke="#8F5902" stroke-width="1" stroke-linejoin="round"/>
+  <path d="M 8 16 V 35 L 24 42 V 23 Z" fill="url(#pkg-front)"
+        stroke="#8F5902" stroke-width="1" stroke-linejoin="round"/>
+  <path d="M 40 16 V 35 L 24 42 V 23 Z" fill="url(#pkg-side)"
+        stroke="#8F5902" stroke-width="1" stroke-linejoin="round"/>
+  <path d="M 21 10.3 L 37 17.3 V 21 L 21 14 Z" fill="#FCE94F"
+        stroke="#C4A000" stroke-width="0.8" stroke-linejoin="round"/>
+  <path d="M 15 19 v 7 l 3 -1 3 2 v -7 z" fill="#F57900"
+        stroke="#CE5C00" stroke-width="0.8" stroke-linejoin="round"
+        transform="skewY(12) translate(0 -6)"/>
+</svg>

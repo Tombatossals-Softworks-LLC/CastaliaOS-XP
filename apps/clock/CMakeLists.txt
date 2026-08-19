@@ -1,0 +1,5 @@
+add_executable(castalia-reloj src/main.cpp)
+target_link_libraries(castalia-reloj PRIVATE castalia-ui)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-reloj PRIVATE -s)
+endif()

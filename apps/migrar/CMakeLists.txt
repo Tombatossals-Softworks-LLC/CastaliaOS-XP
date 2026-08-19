@@ -1,0 +1,5 @@
+add_executable(castalia-migrar src/main.cpp)
+target_link_libraries(castalia-migrar PRIVATE castalia-ui)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-migrar PRIVATE -s)
+endif()

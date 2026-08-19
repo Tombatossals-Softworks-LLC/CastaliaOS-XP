@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: printer — tango aluminium, sun-orange ready LED (§8.4).
+       Original artwork, Tombatossals Softworks. Light source: top-left. -->
+  <defs>
+    <linearGradient id="prn-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EEEEEC"/>
+      <stop offset="1" stop-color="#BABDB6"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="24" cy="42" rx="15" ry="2.2" fill="#2E3436" opacity="0.12"/>
+  <rect x="14" y="6" width="20" height="10" rx="1"
+        fill="#FFFFFF" stroke="#888A85" stroke-width="1"/>
+  <rect x="8" y="15" width="32" height="15" rx="2"
+        fill="url(#prn-body)" stroke="#555753" stroke-width="1"/>
+  <circle cx="35" cy="19" r="1.9" fill="#F57900" stroke="#CE5C00"
+          stroke-width="0.8"/>
+  <rect x="11" y="18" width="10" height="3" rx="1.5" fill="#D3D7CF"/>
+  <rect x="13" y="26" width="22" height="14" rx="1"
+        fill="#FFFFFF" stroke="#888A85" stroke-width="1"/>
+  <g stroke-width="2" stroke-linecap="round">
+    <line x1="17" y1="31" x2="31" y2="31" stroke="#F57900"/>
+    <line x1="17" y1="35.5" x2="27" y2="35.5" stroke="#BABDB6"/>
+  </g>
+</svg>

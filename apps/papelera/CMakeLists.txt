@@ -1,0 +1,5 @@
+add_executable(castalia-papelera src/main.cpp)
+target_link_libraries(castalia-papelera PRIVATE castalia-ui castalia-notify)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-papelera PRIVATE -s)
+endif()

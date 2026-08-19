@@ -1,0 +1,5 @@
+add_executable(castalia-predeterminados src/main.cpp)
+target_link_libraries(castalia-predeterminados PRIVATE castalia-ui)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-predeterminados PRIVATE -s)
+endif()

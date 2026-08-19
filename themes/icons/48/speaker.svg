@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: speaker (Control de volumen) — charcoal speaker with
+       sun-orange sound waves (§8.4). Original artwork, Tombatossals
+       Softworks. Light source: top-left. -->
+  <defs>
+    <linearGradient id="spk-body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#555753"/>
+      <stop offset="1" stop-color="#2E3436"/>
+    </linearGradient>
+  </defs>
+  <!-- cone + box -->
+  <path d="M 6 19 h 7 l 11 -9 v 28 l -11 -9 H 6 a 1 1 0 0 1 -1 -1 v -7
+           a 1 1 0 0 1 1 -1 z"
+        fill="url(#spk-body)" stroke="#2E3436" stroke-width="1"
+        stroke-linejoin="round"/>
+  <path d="M 13 19 l 11 -9 v 4 l -11 9 z" fill="#FFFFFF" opacity="0.12"/>
+  <!-- sound waves in sun orange -->
+  <g fill="none" stroke="#F57900" stroke-width="3" stroke-linecap="round">
+    <path d="M 30 18 a 9 9 0 0 1 0 12"/>
+    <path d="M 35 13 a 16 16 0 0 1 0 22"/>
+    <path d="M 40 9 a 23 23 0 0 1 0 30" opacity="0.6"/>
+  </g>
+</svg>

@@ -1,0 +1,23 @@
+Castalia OS — QEMU boot smoke evidence (Bible §19.1)
+=====================================================
+
+ISO      : castalia-live-amd64.iso (223 MB, built by build/mkiso.sh)
+Machine  : qemu-system-x86_64, 512 MB, 1 vCPU, TCG (no KVM) — FLOOR tier (§16)
+Result   : PASS — reached userspace
+
+Boot chain (serial console, ANSI stripped):
+
+    ISOLINUX 6.04 ...
+    [ isolinux vesamenu: "Castalia OS Classic" / "Castalia Classic (Live)" ]
+    Automatic boot in 3 / 2 / 1 ...
+    INIT: version 3.06 booting
+    INIT: Entering runlevel: 2
+    castalia bookworm (amd64) — arranque de prueba          <-- our /etc/issue
+
+The final line is the Castalia /etc/issue banner printed by the autologin
+getty on ttyS0 — proof the boot reached userspace: isolinux -> Linux kernel
+-> live-boot (mounted /live/filesystem.squashfs) -> SysVinit runlevel 2 ->
+agetty. Reproduce:
+
+    sh build/mkiso.sh --edition live-amd64
+    sh tests/qemu/boot-smoke.sh build/out/iso/castalia-live-amd64.iso

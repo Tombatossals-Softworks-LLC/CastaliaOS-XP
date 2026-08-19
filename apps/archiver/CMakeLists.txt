@@ -1,0 +1,5 @@
+add_executable(castalia-archivador src/main.cpp)
+target_link_libraries(castalia-archivador PRIVATE castalia-ui castalia-notify)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-archivador PRIVATE -s)
+endif()

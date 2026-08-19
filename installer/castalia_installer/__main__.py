@@ -1,0 +1,147 @@
+"""Command-line driver for the installer backend.
+
+Two modes:
+
+* ``--dry-run`` prints the exact, ordered plan (like ``mkiso.sh --dry-run``) —
+  every command it *would* run — and touches nothing;
+* otherwise it executes, but every destructive step is refused unless
+  ``--confirm-erase DISK`` names the exact target disk (§14.5 #1).
+
+This is the shared backend; the Qt GUI and ncurses TUI call the same functions.
+"""
+
+from __future__ import annotations
+
+import argparse
+import sys
+
+from .engine import (
+    ConfirmationRequired,
+    SubprocessRunner,
+    execute,
+)
+from .model import DiskInfo, InstallConfig
+from .plan import build_plan
+
+
+def _probe_size_mib(disk: str) -> int:
+    import subprocess
+
+    out = subprocess.run(
+        ["blockdev", "--getsize64", disk], capture_output=True, text=True,
+        check=True,
+    ).stdout.strip()
+    return int(out) // (1024 * 1024)
+
+
+def build_argparser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="castalia-install",
+        description="Castalia guided installer backend (Bible §14).",
+    )
+    p.add_argument("--disk", required=True, help="target disk, e.g. /dev/sda")
+    p.add_argument("--disk-size-mib", type=int, default=0,
+                   help="disk size in MiB (probed if omitted)")
+    p.add_argument("--hostname", default="castalia")
+    p.add_argument("--user", dest="username", default="usuario")
+    p.add_argument("--full-name", default="Usuario de Castalia")
+    p.add_argument("--theme", default="classic")
+    p.add_argument("--locale", default="es_ES.UTF-8")
+    p.add_argument("--keymap", default="es")
+    p.add_argument("--timezone", default="Europe/Madrid")
+    p.add_argument("--ram-mib", type=int, default=2048)
+    p.add_argument("--swap-mib", type=int, default=0)
+    p.add_argument("--source-root",
+                   default="/run/live/rootfs/filesystem.squashfs")
+    p.add_argument("--mount-root", default="/target")
+    p.add_argument("--autologin", action="store_true")
+    p.add_argument("--dry-run", action="store_true",
+                   help="print the plan and exit; touch nothing")
+    p.add_argument("--copy-only", action="store_true",
+                   help="partition/format/copy/fstab only, skip the chroot "
+                        "phase (bootloader, user) — used by the loopback smoke")
+    p.add_argument("--confirm-erase", metavar="DISK", default=None,
+                   help="type the target disk to authorise destructive steps")
+    p.add_argument("--password", default=None,
+                   help="set the user's password (visible in argv; prefer "
+                        "--password-stdin)")
+    p.add_argument("--password-stdin", action="store_true",
+                   help="read the user's password from the first line of "
+                        "stdin (keeps it out of argv and the process list)")
+    return p
+
+
+def config_from_args(args: argparse.Namespace) -> InstallConfig:
+    return InstallConfig(
+        target_disk=args.disk,
+        hostname=args.hostname,
+        username=args.username,
+        full_name=args.full_name,
+        theme=args.theme,
+        locale=args.locale,
+        keymap=args.keymap,
+        timezone=args.timezone,
+        autologin=args.autologin,
+        ram_mib=args.ram_mib,
+        swap_mib=args.swap_mib,
+        source_root=args.source_root,
+        mount_root=args.mount_root,
+    )
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = build_argparser().parse_args(argv)
+    cfg = config_from_args(args)
+
+    size_mib = args.disk_size_mib
+    if size_mib <= 0 and not args.dry_run:
+        size_mib = _probe_size_mib(args.disk)
+    if size_mib <= 0:
+        # dry-run with no probe: assume a representative 40 GiB disk
+        size_mib = 40 * 1024
+
+    disk = DiskInfo(path=args.disk, size_mib=size_mib)
+    problems = cfg.validate(disk)
+    if problems:
+        for pr in problems:
+            print(f"castalia-install: error: {pr}", file=sys.stderr)
+        return 2
+
+    # A password may be requested via argv (--password) or, preferably, on
+    # stdin (--password-stdin). Either way it becomes a plan step run in the
+    # chroot BEFORE /target is unmounted (never a detached post-step).
+    want_password = bool(args.password) or args.password_stdin
+    plan = build_plan(cfg, size_mib, configure_target=not args.copy_only,
+                      set_password=want_password and not args.copy_only)
+
+    if args.dry_run:
+        print(f"# Castalia install plan for {cfg.target_disk} "
+              f"({size_mib} MiB)")
+        print(f"#   /boot {plan.boot.size_mib} MiB · swap "
+              f"{plan.swap.size_mib} MiB · / {plan.root.size_mib} MiB")
+        for i, step in enumerate(plan.steps, 1):
+            flag = " [DESTRUCTIVE]" if step.destructive else ""
+            print(f"{i:2}. {step.title}{flag}")
+            print(f"      $ {step.describe()}")
+        return 0
+
+    password = args.password
+    if args.password_stdin:
+        password = sys.stdin.readline().rstrip("\n")
+
+    runner = SubprocessRunner()
+    try:
+        execute(plan, runner, confirm_disk=args.confirm_erase,
+                secrets={"password": password or ""},
+                log=lambda m: print(f"castalia-install: {m}"))
+    except ConfirmationRequired as exc:
+        print(f"castalia-install: {exc}", file=sys.stderr)
+        print("castalia-install: pass --confirm-erase "
+              f"{cfg.target_disk} to proceed", file=sys.stderr)
+        return 3
+    print("castalia-install: done — the system is installed and bootable")
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -1,0 +1,45 @@
+# Castalia OS — graphical desktop ISO build + screenshot (Bible §18 Phase 2).
+#
+# Heavy (in-chroot Qt build, ~462 MB ISO), so this is manual/on-demand
+# (workflow_dispatch) rather than per-push. It builds the live-desktop-amd64
+# edition, boots it in QEMU with a real VGA, captures the framebuffer, and
+# uploads the PNG so the graphical desktop is verifiable in CI.
+
+name: Desktop ISO (manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  desktop-iso:
+    name: Build + boot the graphical desktop ISO
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install ISO + boot toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            debootstrap squashfs-tools xorriso isolinux syslinux-common \
+            qemu-system-x86 python3
+
+      - name: Build the live-desktop ISO (Xorg + Openbox + Castalia shell)
+        run: sudo sh build/mkiso.sh --edition live-desktop-amd64
+
+      - name: Boot it and capture the desktop framebuffer
+        run: |
+          python3 tests/qemu/screenshot.py \
+            build/out/iso/castalia-live-desktop-amd64.iso \
+            --out castalia-desktop-live.png --wait 180 --mem 768
+          test -s castalia-desktop-live.png
+
+      - name: Upload the desktop screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: castalia-desktop-live
+          path: |
+            castalia-desktop-live.png
+            castalia-desktop-live.serial.log

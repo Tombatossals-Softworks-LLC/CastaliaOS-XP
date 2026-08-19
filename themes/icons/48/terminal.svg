@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: terminal — charcoal screen, sun-orange prompt (§8.4).
+       Original artwork, Tombatossals Softworks. Light source: top-left. -->
+  <defs>
+    <linearGradient id="trm-frame" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EEEEEC"/>
+      <stop offset="1" stop-color="#D3D7CF"/>
+    </linearGradient>
+  </defs>
+  <rect x="6" y="9" width="36" height="30" rx="2"
+        fill="url(#trm-frame)" stroke="#888A85" stroke-width="1"/>
+  <rect x="9" y="12" width="30" height="24" rx="1" fill="#2E3436"/>
+  <path d="M 10 13 h 28 v 4 h -28 z" fill="#FFFFFF" opacity="0.06"/>
+  <path d="M 13 18 L 18 22 L 13 26" fill="none" stroke="#FCAF3E"
+        stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="21" y="24" width="9" height="2.4" fill="#EEEEEC"/>
+</svg>

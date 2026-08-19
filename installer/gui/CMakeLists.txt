@@ -1,0 +1,5 @@
+add_executable(castalia-instalador src/main.cpp)
+target_link_libraries(castalia-instalador PRIVATE castalia-ui)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-instalador PRIVATE -s)
+endif()

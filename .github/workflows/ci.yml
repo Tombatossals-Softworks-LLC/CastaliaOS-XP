@@ -1,0 +1,321 @@
+# Castalia OS — per-commit CI (Project Bible §17.4).
+#
+# Gates every push/PR on:
+#   * Python tooling lint (ruff)
+#   * Unit tests for the QA tooling (WCAG color math, theme lint, provenance)
+#   * theme-lint  — the visual design system enforced as code (§8)
+#   * provenance-check — the §3.9 legal gate: no untracked shipped assets
+#   * packaging dry-runs (mkiso / mkdeb / mkrepo plans, §13, §17.2)
+#   * the offscreen render gate: every app × every theme (§8, §19)
+#   * live E2E under Xvfb + Openbox: EWMH taskbar, the full 25-app suite,
+#     and the real castalia-session entry point (§7, §9, §19)
+#   * distribution: build the .deb, install it, run it, apt-resolve it from
+#     the generated overlay repo (§13, §17.2)
+#   * ISO build + QEMU boot, installer loopback + install-and-boot (§14, §18)
+#
+# The heavier scheduled/nightly and tag-driven release pipelines live in
+# nightly.yml and release.yml (§17.4).
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  qa:
+    name: Lint, tests, design-system & legal gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ruff
+        # Pinned so the lint gate is reproducible: an unpinned ruff drifts its
+        # default rule set between releases and turns green code red. The rule
+        # selection is pinned too, in ruff.toml at the repo root.
+        run: pip install ruff==0.15.8
+
+      - name: Ruff (tooling lint)
+        run: ruff check tools installer recovery
+
+      - name: Unit tests (QA tooling)
+        run: PYTHONPATH=tools python3 -m unittest discover -s tools/tests -v
+
+      - name: Unit tests (installer backend, Bible §14)
+        run: PYTHONPATH=installer python3 -m unittest discover -s installer/tests -v
+
+      - name: Unit tests (Restore Points backend, Bible §9/P8)
+        run: PYTHONPATH=recovery python3 -m unittest discover -s recovery/tests -v
+
+      - name: theme-lint (design system gate, Bible §8)
+        run: PYTHONPATH=tools python3 -m castalia_qa.theme_lint themes
+
+      - name: provenance-check (legal gate, Bible §3.9)
+        run: PYTHONPATH=tools python3 -m castalia_qa.provenance .
+
+      - name: theme-export smoke (QSS + Openbox from tokens, Bible §6.16)
+        run: PYTHONPATH=tools python3 tools/theme_export.py --out /tmp/theme-export-smoke
+
+      - name: sound render smoke (palette determinism, Bible §21.4)
+        run: PYTHONPATH=tools python3 tools/sound_gen.py --out /tmp/sound-smoke
+
+      - name: ISO pipeline dry-run (all editions, Bible §17.2)
+        run: |
+          for p in build/profiles/*.conf; do
+            sh build/mkiso.sh --edition "$(basename "$p" .conf)" --dry-run > /dev/null
+          done
+
+      - name: Installer plan dry-run (Bible §14)
+        run: |
+          PYTHONPATH=installer python3 -m castalia_installer \
+            --disk /dev/sda --disk-size-mib 40960 --hostname pc-castalia \
+            --user dave --dry-run > /dev/null
+
+      - name: Packaging dry-run (deb + apt overlay repo, Bible §13, §17.2)
+        run: |
+          sh packages/mkdeb.sh --dry-run > /dev/null
+          sh build/mkrepo.sh --dry-run > /dev/null
+
+      - name: Restore Points snapshot/restore smoke (Bible §9/P8)
+        run: sh recovery/tests/snapshot-smoke.sh
+
+  panel-poc:
+    name: Qt panel PoC (build + offscreen render, Bible §18 Phase 0)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install Qt5 + tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            qtbase5-dev libqt5svg5-dev libxcb1-dev cmake g++ fonts-dejavu-core
+
+      - name: Generate QSS from tokens
+        run: PYTHONPATH=tools python3 tools/theme_export.py
+
+      - name: Build the shell (libcastalia-ui + panel + explorer)
+        run: |
+          cmake -S shell -B build/out/shell-build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/out/shell-build -j4
+
+      - name: Offscreen render gate (every app x every theme, tests/apps.manifest)
+        run: sh tests/offscreen/render-all.sh --out /tmp/render
+
+      - name: libcastalia-ui self-test (shared foundation gate, Bible §12.3)
+        run: ./build/out/shell-build/libcastalia-ui/castalia-ui-selftest .
+
+      - name: Desktop plane self-test (rubber band, wallpaper cache, flourish)
+        env:
+          QT_QPA_PLATFORM: offscreen
+        run: |
+          ./build/out/shell-build/desktop/castalia-desktop \
+            --repo . --theme human --size 1024x768 --selftest
+
+      - name: Buscaminas model self-test (head-less game-logic gate, Bible §9.4)
+        run: ./build/out/shell-build/apps/buscaminas/castalia-buscaminas --selftest
+
+      - name: Solitario rules self-test (head-less game-logic gate, Bible §9.4)
+        run: ./build/out/shell-build/apps/solitario/castalia-solitario --selftest
+
+      - name: Run-dialog routing self-test (Bible §7.7)
+        run: ./build/out/shell-build/apps/ejecutar/castalia-ejecutar --selftest
+
+      - name: Session/power action-table self-test (Bible §7.6)
+        run: ./build/out/shell-build/apps/salir/castalia-salir --selftest
+
+      - name: Panel self-test (tray parsing + Alt+Tab, Bible §7.4, §7.6)
+        run: ./build/out/shell-build/panel/castalia-panel --selftest
+
+      - name: Notification-server self-test (timeouts, mute, history, stack)
+        run: ./build/out/shell-build/apps/notificaciones/castalia-notificaciones --selftest
+
+      - name: Log-viewer classifier self-test (Bible §9.2)
+        run: ./build/out/shell-build/apps/registros/castalia-registros --selftest
+
+      - name: Services-manager parser self-test (Bible §9.2, §6.4)
+        run: ./build/out/shell-build/apps/servicios/castalia-servicios --selftest
+
+      - name: Hardware-center parser self-test (Bible §9, §6.15)
+        run: ./build/out/shell-build/apps/hardware/castalia-hardware --selftest
+
+      - name: Disk-manager safety-gate self-test (Bible §9 — destructive ops)
+        run: ./build/out/shell-build/apps/discos/castalia-discos --selftest
+
+      - name: Migration-assistant folder-map self-test (Bible §9, §14.6)
+        run: ./build/out/shell-build/apps/migrar/castalia-migrar --selftest
+
+      - name: Network-center nmcli/validator self-test (Bible §9, §6.9)
+        run: ./build/out/shell-build/apps/redes/castalia-redes --selftest
+
+  e2e:
+    name: E2E — live desktop, full app suite & session (Bible §7, §9, §19)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install Qt5, Xorg, Openbox & capture tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            qtbase5-dev libqt5svg5-dev libxcb1-dev cmake g++ fonts-dejavu-core \
+            xvfb openbox x11-utils imagemagick
+
+      - name: Generate QSS from tokens
+        run: PYTHONPATH=tools python3 tools/theme_export.py
+
+      - name: Build the shell
+        run: |
+          cmake -S shell -B build/out/shell-build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/out/shell-build -j4
+
+      - name: Live EWMH taskbar smoke (real WM + real windows)
+        run: |
+          mkdir -p /tmp/e2e-shots
+          sh tests/live/desktop-smoke.sh --shot /tmp/e2e-shots/live-desktop.png
+
+      - name: E2E — every app live under Openbox (tests/apps.manifest)
+        run: sh tests/e2e/apps-live.sh --shotdir /tmp/e2e-shots
+
+      - name: E2E — real session entry point (boot, supervise, logout, §7.1)
+        run: sh tests/e2e/session-smoke.sh
+
+      - name: Dark-theme desktop under a real WM (Openbox decorations, §8.6)
+        run: |
+          sh tests/live/desktop-hero.sh --theme medianoche \
+            --shot /tmp/e2e-shots/desktop-medianoche.png
+
+      - name: Upload E2E screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-screenshots
+          path: /tmp/e2e-shots/
+          if-no-files-found: ignore
+
+  package:
+    name: Distribution — .deb build, install, run & apt repo (Bible §13, §17.2)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install Qt5 + packaging toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            qtbase5-dev libqt5svg5-dev libxcb1-dev cmake g++ fonts-dejavu-core \
+            dpkg-dev imagemagick librsvg2-bin
+
+      - name: Generate QSS from tokens
+        run: PYTHONPATH=tools python3 tools/theme_export.py
+
+      - name: Generate the Xcursor pointer theme
+        run: PYTHONPATH=tools python3 tools/cursor_gen.py
+
+      - name: Build the shell
+        run: |
+          cmake -S shell -B build/out/shell-build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/out/shell-build -j4
+
+      - name: Build castalia-desktop.deb
+        run: sh packages/mkdeb.sh
+
+      - name: Install the .deb (with dependency resolution)
+        run: sudo apt-get install -y ./build/out/deb/castalia-desktop_*.deb
+
+      - name: Run the INSTALLED desktop (from /opt/castalia, not the tree)
+        run: |
+          QT_QPA_PLATFORM=offscreen castalia-calc --theme medianoche \
+            --repo /usr/share/castalia --screenshot /tmp/installed-calc.png
+          test -s /tmp/installed-calc.png
+          test -f /usr/share/xsessions/castalia.desktop
+          test -f /etc/castalia/theme.conf
+
+      - name: Assemble the apt overlay repo (unsigned QA build, §13.1)
+        run: sh build/mkrepo.sh
+
+      - name: apt can resolve castalia-desktop from the repo
+        run: |
+          echo "deb [trusted=yes] file:$PWD/build/out/repo castalia main" \
+            | sudo tee /etc/apt/sources.list.d/castalia-ci.list
+          sudo apt-get update
+          apt-cache policy castalia-desktop | tee /tmp/policy.txt
+          grep -q "file:$PWD/build/out/repo" /tmp/policy.txt
+
+      - name: Upload the .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: castalia-desktop-deb
+          path: build/out/deb/*.deb
+
+  installer-loopback:
+    name: Installer engine on a real disk (loopback, Bible §14)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install disk tooling
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            parted e2fsprogs rsync util-linux python3
+
+      - name: Real install to a loopback disk image
+        run: |
+          sudo modprobe loop || true
+          sudo sh installer/tests/loopback-smoke.sh
+
+  iso-boot:
+    name: Live ISO build + QEMU boot (Bible §18 Phase 1, §19.1)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install ISO + boot toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            debootstrap squashfs-tools xorriso isolinux syslinux-common \
+            qemu-system-x86 python3
+
+      - name: Build the live-amd64 ISO
+        run: sudo sh build/mkiso.sh --edition live-amd64
+
+      - name: Boot menu as shipped (live default, no install it cannot do)
+        run: sh tests/iso/menu-check.sh build/out/iso/castalia-live-amd64.iso
+
+      - name: Boot it headless in QEMU and assert userspace
+        run: |
+          sh tests/qemu/boot-smoke.sh \
+            build/out/iso/castalia-live-amd64.iso --timeout 300
+
+  installer-endtoend:
+    name: Installer end-to-end (install to disk + QEMU boot, Bible §14)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install install + boot toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            debootstrap parted e2fsprogs rsync util-linux \
+            qemu-system-x86 python3
+
+      - name: Install to a disk with castalia-install, then boot it
+        run: |
+          sudo modprobe loop || true
+          sudo sh installer/tests/qemu-install.sh --timeout 480

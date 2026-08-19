@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: network places — sky-blue globe with tango depth (§8.4).
+       Original artwork, Tombatossals Softworks. Light source: top-left. -->
+  <defs>
+    <radialGradient id="net-glb" cx="0.35" cy="0.3" r="0.95">
+      <stop offset="0" stop-color="#729FCF"/>
+      <stop offset="1" stop-color="#204A87"/>
+    </radialGradient>
+  </defs>
+  <circle cx="24" cy="24" r="17" fill="url(#net-glb)"
+          stroke="#204A87" stroke-width="1.5"/>
+  <g stroke="#FFFFFF" stroke-width="1.5" fill="none" opacity="0.75">
+    <ellipse cx="24" cy="24" rx="8" ry="17"/>
+    <line x1="7" y1="24" x2="41" y2="24"/>
+    <path d="M 9.5 15 a 22 10 0 0 1 29 0"/>
+    <path d="M 9.5 33 a 22 10 0 0 0 29 0"/>
+  </g>
+  <path d="M 12 12.5 a 15 15 0 0 1 15 -4.5 q -1.5 6 -8 6.5 t -7 -2 z"
+        fill="#FFFFFF" opacity="0.3"/>
+</svg>

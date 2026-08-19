@@ -1,0 +1,32 @@
+Castalia installer — loopback engine proof (installer/tests/loopback-smoke.sh)
+=============================================================================
+Run as root against an 8.6 GiB loopback disk image. The REAL engine ran
+parted / mkfs.ext4 / mkswap / mount / rsync and generated /etc/fstab from
+probed UUIDs. Re-mounting the installed root confirmed the result.
+
+  castalia-install: Create MS-DOS partition table on /dev/loop0
+  castalia-install: Create /boot partition
+  castalia-install: Mark /boot bootable
+  castalia-install: Create swap partition
+  castalia-install: Create root partition
+  castalia-install: Re-read the partition table
+  castalia-install: Format /boot (ext4)
+  castalia-install: Initialise swap
+  castalia-install: Format root (ext4)
+  castalia-install: Mount root / Mount /boot / Enable swap
+  castalia-install: Copy the system to disk           (rsync)
+  castalia-install: Write /etc/fstab / hostname / hosts
+  castalia-install: done — the system is installed and bootable
+
+  OK  copied tree present: castalia-marker-6320
+  OK  executable bit preserved by rsync
+  OK  fstab has a real root UUID:
+        UUID=44f11eb1-494f-4aa6-b648-918914acef50  /      ext4  errors=remount-ro  0  1
+        UUID=97e935df-61e4-4b15-8f3a-913ba9c78940  /boot  ext4  defaults           0  2
+        UUID=2cc96892-c04c-46d1-856a-5999d45edf55  none   swap  sw                 0  0
+  OK  /etc/hostname written
+  OK  fstab root UUID matches blkid (44f11eb1-494f-4aa6-b648-918914acef50)
+  loopback-smoke: PASS — engine really installs to disk
+
+Not covered here (needs a bootable rootfs): grub-install + chroot user
+creation — that is the QEMU install test (next step).

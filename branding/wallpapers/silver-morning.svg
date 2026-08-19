@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="768" viewBox="0 0 1024 768" preserveAspectRatio="xMidYMid slice">
+  <!--
+    Castalia wallpaper: "Silver Morning" (the Plata theme's desktop).
+    A calm silver-grey morning haze over layered ridges, the Castalia keep a
+    soft silhouette in the mist. Original artwork by Tombatossals Softworks;
+    no third-party asset referenced. Raster sizes baked from source.
+  -->
+  <defs>
+    <linearGradient id="sm-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0"    stop-color="#8B939C"/>
+      <stop offset="0.55" stop-color="#C2C8CE"/>
+      <stop offset="1"    stop-color="#E9EAEC"/>
+    </linearGradient>
+    <radialGradient id="sm-sun" cx="0.5" cy="0.55" r="0.5">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.85"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect x="0" y="0" width="1024" height="768" fill="url(#sm-sky)"/>
+  <circle cx="512" cy="360" r="180" fill="url(#sm-sun)"/>
+  <!-- receding ridges, each paler into the haze -->
+  <path d="M 0 470 Q 260 430 520 458 Q 780 486 1024 448 L 1024 768 L 0 768 Z"
+        fill="#56718C" opacity="0.28"/>
+  <path d="M 0 540 Q 300 500 560 534 Q 800 566 1024 528 L 1024 768 L 0 768 Z"
+        fill="#56718C" opacity="0.42"/>
+  <path d="M 0 620 Q 280 584 540 616 Q 800 648 1024 610 L 1024 768 L 0 768 Z"
+        fill="#454C55" opacity="0.6"/>
+  <!-- the keep, soft in the mid ridge -->
+  <g fill="#3C444E" opacity="0.85">
+    <rect x="452" y="472" width="42" height="66"/>
+    <rect x="452" y="462" width="9" height="12"/>
+    <rect x="465" y="462" width="9" height="12"/>
+    <rect x="478" y="462" width="9" height="12"/>
+    <rect x="494" y="506" width="38" height="32"/>
+  </g>
+  <rect x="468" y="492" width="6" height="9" fill="#E4EAF0" opacity="0.9"/>
+  <!-- faint horizon light band -->
+  <rect x="0" y="452" width="1024" height="20" fill="#FFFFFF" opacity="0.12"/>
+</svg>

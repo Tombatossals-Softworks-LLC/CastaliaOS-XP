@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: folder — sun-orange tangerine folders are the Human
+       signature (§8.4). Original artwork, Tombatossals Softworks.
+       Light source: top-left. -->
+  <defs>
+    <linearGradient id="fld-back" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#E9B96E"/>
+      <stop offset="1" stop-color="#C17D11"/>
+    </linearGradient>
+    <linearGradient id="fld-front" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FCAF3E"/>
+      <stop offset="1" stop-color="#F57900"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="24" cy="41.5" rx="16" ry="2.4" fill="#2E3436" opacity="0.12"/>
+  <path d="M 5 13 a 2 2 0 0 1 2 -2 h 11 l 4 5 h 19 a 2 2 0 0 1 2 2 v 4 H 5 Z"
+        fill="url(#fld-back)" stroke="#8F5902" stroke-width="1"/>
+  <rect x="5" y="18" width="38" height="22" rx="2"
+        fill="url(#fld-front)" stroke="#CE5C00" stroke-width="1"/>
+  <path d="M 7 20.5 h 34" stroke="#FFE0B0" stroke-width="2"
+        stroke-linecap="round" opacity="0.75"/>
+</svg>

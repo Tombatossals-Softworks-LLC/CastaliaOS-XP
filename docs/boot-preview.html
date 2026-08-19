@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Castalia OS — Boot Sequence Preview</title>
+<style>
+/* ============ page chrome (quiet, dark-room screening) ============ */
+:root{
+  --pg-bg:#101519; --pg-ink:#E8E4DC; --pg-ink2:#93A0AC; --pg-card:#171E25;
+  --pg-line:#26303A; --pg-accent:#6FA7C4;
+}
+:root[data-theme="light"]{
+  --pg-bg:#ECEDEA; --pg-ink:#22262B; --pg-ink2:#5D6873; --pg-card:#F7F7F4;
+  --pg-line:#D3D6D0; --pg-accent:#2C6699;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--pg-bg);color:var(--pg-ink);
+  font-family:Verdana,'DejaVu Sans',Geneva,Tahoma,sans-serif;
+  font-size:14px;line-height:1.55}
+.page{max-width:980px;margin:0 auto;padding:26px 20px 48px;
+  display:flex;flex-direction:column;gap:22px}
+h1{font-size:22px;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.eyebrow{margin:0;font-size:11px;text-transform:uppercase;
+  letter-spacing:.14em;color:var(--pg-accent)}
+.sub{margin:0;color:var(--pg-ink2);max-width:70ch;font-size:13px}
+code{font-family:'Cascadia Mono','DejaVu Sans Mono',Consolas,monospace;
+  font-size:.92em}
+
+/* ============ the screen ============ */
+/* Timing note: every duration/delay is calc(Ns * var(--k)) so the whole
+   choreography honours the slow-motion review toggle (--k: 1 | 4). */
+.bezel{background:#000;border-radius:14px;padding:14px;
+  box-shadow:0 24px 60px rgba(0,0,0,.5), inset 0 0 0 1px #2A333C}
+.screen{--k:1;position:relative;width:100%;aspect-ratio:4/3;
+  overflow:hidden;border-radius:4px;background:#050A10}
+.screen.slow{--k:4}
+
+/* deep-sea field */
+.glow{position:absolute;inset:0;opacity:0;
+  background:radial-gradient(65% 65% at 50% 42%, #16344E 0%, #0D1D2E 60%, #0A141F 100%)}
+.play .glow{animation:fadein calc(1.2s*var(--k)) ease-out calc(.3s*var(--k)) forwards}
+.vign{position:absolute;inset:0;
+  background:radial-gradient(80% 80% at 50% 50%, transparent 60%, rgba(0,0,0,.55) 100%)}
+
+/* ============ the keep (SVG animated by group) ============ */
+.mark{position:absolute;left:50%;top:23%;width:24%;
+  transform:translateX(-50%)}
+.mark svg{width:100%;height:auto;display:block;overflow:visible}
+.g-tower{opacity:0;transform:translateY(30px)}
+.play .g-tower{animation:rise calc(.9s*var(--k)) cubic-bezier(.2,.7,.3,1) calc(.5s*var(--k)) forwards}
+.g-m{opacity:0;transform:scaleY(0);transform-origin:center bottom;transform-box:fill-box}
+.play .g-m1{animation:pop calc(.35s*var(--k)) cubic-bezier(.2,.9,.3,1.3) calc(1.20s*var(--k)) forwards}
+.play .g-m2{animation:pop calc(.35s*var(--k)) cubic-bezier(.2,.9,.3,1.3) calc(1.35s*var(--k)) forwards}
+.play .g-m3{animation:pop calc(.35s*var(--k)) cubic-bezier(.2,.9,.3,1.3) calc(1.50s*var(--k)) forwards}
+.g-door{opacity:0}
+.play .g-door{animation:fadein calc(.5s*var(--k)) ease calc(1.7s*var(--k)) forwards}
+.g-win{opacity:0}
+.play .g-win{animation:fadein calc(.5s*var(--k)) ease calc(1.7s*var(--k)) forwards,
+  winpulse calc(4s*var(--k)) ease-in-out calc(2.2s*var(--k)) infinite}
+.g-sea{opacity:0;transform:translateY(14px)}
+.play .g-sea{animation:rise calc(.8s*var(--k)) cubic-bezier(.2,.7,.3,1) calc(1.9s*var(--k)) forwards}
+
+/* ============ wordmark ============ */
+.wordmark{position:absolute;left:0;right:0;top:62%;text-align:center;
+  color:#E8E4DC;font-weight:700;font-size:clamp(22px,4.6vw,40px);
+  letter-spacing:.6em;text-indent:.6em;opacity:0}
+.play .wordmark{animation:settle calc(.8s*var(--k)) cubic-bezier(.2,.7,.2,1) calc(2.1s*var(--k)) forwards}
+.classic{position:absolute;left:0;right:0;top:71.5%;text-align:center;
+  color:#7FA6C4;font-size:clamp(10px,1.6vw,14px);letter-spacing:.5em;
+  text-indent:.5em;opacity:0}
+.credit{position:absolute;left:0;right:0;bottom:6.5%;text-align:center;
+  color:#4E6E88;font-size:clamp(9px,1.4vw,12px);opacity:0}
+.play .classic,.play .credit{animation:fadein calc(.7s*var(--k)) ease calc(2.5s*var(--k)) forwards}
+
+/* ============ progress ============ */
+.prog{position:absolute;left:50%;top:80.5%;width:31%;height:6px;
+  transform:translateX(-50%);border-radius:3px;background:#132638;
+  opacity:0}
+.play .prog{animation:fadein calc(.5s*var(--k)) ease calc(2.7s*var(--k)) forwards}
+.fill{position:absolute;inset:0 100% 0 0;border-radius:3px;
+  background:linear-gradient(90deg,#2C6699,#3E82B6)}
+.play .fill{animation:load calc(3.2s*var(--k)) calc(2.8s*var(--k)) forwards}
+.sheen{position:absolute;inset:0;border-radius:3px;opacity:0;overflow:hidden}
+.sheen::after{content:"";position:absolute;top:0;bottom:0;width:34%;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.4),transparent)}
+.play .sheen{animation:fadein calc(.4s*var(--k)) ease calc(2.9s*var(--k)) forwards}
+.play .sheen::after{animation:sweep calc(1.4s*var(--k)) linear calc(2.9s*var(--k)) infinite}
+.done .fill{box-shadow:0 0 12px 1px rgba(93,155,200,.8)}
+.done .sheen{display:none}
+.status{position:absolute;left:0;right:0;top:85%;text-align:center;
+  color:#7FA6C4;font-size:clamp(10px,1.5vw,13px);min-height:1.4em;
+  opacity:0;transition:opacity calc(.25s*var(--k)) ease}
+.status.on{opacity:1}
+.esc{position:absolute;right:2.5%;bottom:2.5%;color:#33506A;
+  font-size:clamp(8px,1.2vw,11px);opacity:0}
+.play .esc{animation:fadein calc(.8s*var(--k)) ease calc(1s*var(--k)) forwards}
+
+/* handoff bloom */
+.bloom{position:absolute;inset:0;background:#EAF2F8;opacity:0;
+  pointer-events:none}
+.play.done .bloom{animation:bloom calc(.9s*var(--k)) ease-in-out calc(.35s*var(--k)) 1}
+
+@keyframes fadein{to{opacity:1}}
+@keyframes rise{to{opacity:1;transform:translateY(0)}}
+@keyframes pop{60%{opacity:1;transform:scaleY(1.12)}to{opacity:1;transform:scaleY(1)}}
+@keyframes settle{from{opacity:0;letter-spacing:.6em;text-indent:.6em}
+  to{opacity:1;letter-spacing:.18em;text-indent:.18em}}
+@keyframes winpulse{0%,100%{opacity:1}50%{opacity:.55}}
+@keyframes load{0%{inset:0 100% 0 0}30%{inset:0 62% 0 0}42%{inset:0 60% 0 0}
+  60%{inset:0 48% 0 0}78%{inset:0 14% 0 0}88%{inset:0 12% 0 0}100%{inset:0 0% 0 0}}
+@keyframes sweep{from{left:-40%}to{left:110%}}
+@keyframes bloom{0%{opacity:0}45%{opacity:.85}100%{opacity:0}}
+
+/* reduced motion: present the finished frame, no choreography */
+@media (prefers-reduced-motion:reduce){
+  .play .glow,.play .g-tower,.play .g-m,.play .g-door,.play .g-win,
+  .play .g-sea,.play .wordmark,.play .classic,.play .credit,.play .prog,
+  .play .esc{animation:none;opacity:1;transform:none}
+  .play .wordmark{letter-spacing:.18em;text-indent:.18em}
+  .play .fill{animation:none;inset:0 0% 0 0}
+  .play .sheen,.play .sheen::after{animation:none;display:none}
+  .play.done .bloom{animation:none}
+}
+
+/* ============ controls + spec table ============ */
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{font:inherit;font-size:13px;color:var(--pg-ink);cursor:pointer;
+  background:var(--pg-card);border:1px solid var(--pg-line);
+  border-radius:8px;padding:8px 18px}
+.btn.primary{border-color:var(--pg-accent);
+  box-shadow:0 0 0 1px var(--pg-accent) inset;font-weight:700}
+.btn[aria-pressed="true"]{background:var(--pg-accent);color:#0E1520}
+.btn:focus-visible{outline:2px solid var(--pg-accent);outline-offset:2px}
+.hintline{font-size:12px;color:var(--pg-ink2)}
+.spec{background:var(--pg-card);border:1px solid var(--pg-line);
+  border-radius:12px;padding:16px 18px;overflow-x:auto}
+.spec h2{font-size:14px;margin:0 0 10px;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--pg-ink2)}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+td,th{padding:5px 10px;text-align:left;border-bottom:1px solid var(--pg-line)}
+tr:last-child td{border-bottom:none}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--pg-ink2)}
+td:first-child{font-variant-numeric:tabular-nums;white-space:nowrap;
+  color:var(--pg-accent)}
+.foot{font-size:12px;color:var(--pg-ink2);max-width:80ch}
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <p class="eyebrow">Tombatossals Softworks · secuencia de arranque · spec animada</p>
+    <h1>Castalia OS — Boot Splash</h1>
+    <p class="sub">La coreografía real del arranque (Bible §8.6): el torreón se alza, la marca
+    respira, el progreso es <em>honesto</em> — cada tramo de la barra corresponde a una fase
+    real de runit. Usa <strong>cámara lenta</strong> para revisar cada beat.</p>
+  </header>
+
+  <div class="bezel">
+    <div class="screen" id="screen">
+      <div class="glow"></div>
+      <div class="mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48">
+          <g class="g-tower">
+            <rect x="14" y="10" width="20" height="27" fill="#D8C49A" stroke="#8A7A5C" stroke-width="1"/>
+          </g>
+          <g class="g-m g-m1"><rect x="14" y="6" width="4" height="6" fill="#D8C49A" stroke="#8A7A5C" stroke-width="1"/></g>
+          <g class="g-m g-m2"><rect x="22" y="6" width="4" height="6" fill="#D8C49A" stroke="#8A7A5C" stroke-width="1"/></g>
+          <g class="g-m g-m3"><rect x="30" y="6" width="4" height="6" fill="#D8C49A" stroke="#8A7A5C" stroke-width="1"/></g>
+          <g class="g-door"><path d="M 21 37 L 21 29 A 3 3 0 0 1 27 29 L 27 37 Z" fill="#2C6699"/></g>
+          <g class="g-win"><rect x="23" y="15" width="2" height="6" fill="#F5D9A0"/></g>
+          <g class="g-sea">
+            <path d="M 0 40 Q 6 35 12 40 T 24 40 T 36 40 T 48 40 L 48 48 L 0 48 Z" fill="#3E82B6"/>
+            <path d="M 0 44 Q 6 40 12 44 T 24 44 T 36 44 T 48 44 L 48 48 L 0 48 Z" fill="#2C6699"/>
+          </g>
+        </svg>
+      </div>
+      <div class="wordmark">CASTALIA</div>
+      <div class="classic">CLASSIC</div>
+      <div class="prog"><div class="fill"></div><div class="sheen"></div></div>
+      <p class="status" id="status"></p>
+      <div class="credit">Tombatossals Softworks</div>
+      <div class="esc">Esc: arranque detallado</div>
+      <div class="vign"></div>
+      <div class="bloom"></div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn primary" id="replay">▸ Reproducir arranque</button>
+    <button class="btn" id="slow" aria-pressed="false">Cámara lenta ×4</button>
+    <span class="hintline" id="clock">t = 0.0 s</span>
+  </div>
+
+  <div class="spec">
+    <h2>Coreografía (1×)</h2>
+    <table>
+      <thead><tr><th>t (s)</th><th>fase</th><th>movimiento</th></tr></thead>
+      <tbody>
+        <tr><td>0.30</td><td>Campo</td><td>El resplandor radial respira (1.2 s ease-out)</td></tr>
+        <tr><td>0.50</td><td>Torreón</td><td>Sube 30 px con fundido (0.9 s)</td></tr>
+        <tr><td>1.20</td><td>Almenas</td><td>Tres pops desde la base, 0.15 s de escalonado</td></tr>
+        <tr><td>1.70</td><td>Puerta y ventana</td><td>Fundido; la ventana pulsa cálida (bucle 4 s)</td></tr>
+        <tr><td>1.90</td><td>Mar</td><td>La banda de olas entra desde abajo (0.8 s)</td></tr>
+        <tr><td>2.10</td><td>Wordmark</td><td>CASTALIA asienta el letter-spacing 0.6em→0.18em</td></tr>
+        <tr><td>2.70</td><td>Progreso</td><td>0→100 % en pasos reales (38·52·86·100) + barrido de brillo</td></tr>
+        <tr><td>2.7–5.9</td><td>Estado</td><td>Iniciando servicios · Detectando hardware · Montando discos · Preparando escritorio</td></tr>
+        <tr><td>5.90</td><td>Completo</td><td>La barra brilla; estado → <strong>Bienvenido</strong></td></tr>
+        <tr><td>6.30</td><td>Entrega</td><td>Bloom blanco 0.9 s → greeter</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="foot">Reglas de ingeniería (spec completa en <code>branding/boot/README.md</code>):
+  el splash nunca retrasa el arranque (≤ 0.3 s, ≤ 8 MB, sin GPU); framebuffer 640×480×16bpp;
+  el progreso lee fases reales de <code>/run/castalia/boot-progress</code>; Esc siempre da
+  arranque de texto detallado. Con <code>prefers-reduced-motion</code> se muestra el
+  fotograma final estático.</p>
+</div>
+
+<script>
+(function(){
+  var screen=document.getElementById('screen');
+  var status=document.getElementById('status');
+  var clock=document.getElementById('clock');
+  var replay=document.getElementById('replay');
+  var slowBtn=document.getElementById('slow');
+  var timers=[], t0=0, ticker=null;
+  var reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  var STEPS=[
+    [2700,'Iniciando servicios…'],
+    [3600,'Detectando hardware…'],
+    [4400,'Montando discos…'],
+    [5100,'Preparando escritorio…'],
+    [5900,'Bienvenido']
+  ];
+
+  function k(){return screen.classList.contains('slow')?4:1;}
+
+  function clear(){
+    timers.forEach(clearTimeout); timers=[];
+    if(ticker){clearInterval(ticker); ticker=null;}
+  }
+
+  function setStatus(msg,final){
+    status.classList.remove('on');
+    timers.push(setTimeout(function(){
+      status.textContent=msg; status.classList.add('on');
+      if(final){screen.classList.add('done');}
+    },120*k()));
+  }
+
+  function play(){
+    clear();
+    screen.classList.remove('play','done');
+    status.classList.remove('on'); status.textContent='';
+    void screen.offsetWidth;               /* restart CSS animations */
+    screen.classList.add('play');
+    t0=performance.now();
+    if(reduced){ setStatus('Bienvenido',true); clock.textContent='t = —'; return; }
+    STEPS.forEach(function(s){
+      timers.push(setTimeout(function(){
+        setStatus(s[1], s[0]===5900);
+      }, s[0]*k()));
+    });
+    ticker=setInterval(function(){
+      var t=(performance.now()-t0)/1000/k();
+      clock.textContent='t = '+t.toFixed(1)+' s';
+      if(t>7.4){clearInterval(ticker); ticker=null;}
+    },100);
+  }
+
+  replay.addEventListener('click',play);
+  slowBtn.addEventListener('click',function(){
+    var on=!screen.classList.contains('slow');
+    screen.classList.toggle('slow',on);
+    slowBtn.setAttribute('aria-pressed',on?'true':'false');
+    play();
+  });
+
+  play();
+})();
+</script>
+</body>
+</html>

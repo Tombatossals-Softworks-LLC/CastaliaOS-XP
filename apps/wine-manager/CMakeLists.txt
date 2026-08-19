@@ -1,0 +1,5 @@
+add_executable(castalia-wine src/main.cpp)
+target_link_libraries(castalia-wine PRIVATE castalia-ui)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-wine PRIVATE -s)
+endif()

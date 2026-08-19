@@ -1,0 +1,4 @@
+#!/bin/sh
+# runit service: LightDM greeter (Bible §6.6).
+exec 2>&1
+exec lightdm

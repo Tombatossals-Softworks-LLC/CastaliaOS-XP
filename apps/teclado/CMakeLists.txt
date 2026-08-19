@@ -1,0 +1,5 @@
+add_executable(castalia-teclado src/main.cpp)
+target_link_libraries(castalia-teclado PRIVATE castalia-ui)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-teclado PRIVATE -s)
+endif()

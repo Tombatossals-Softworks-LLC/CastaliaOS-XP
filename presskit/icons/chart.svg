@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: chart (Monitor del sistema) — warm rising bars and
+       trend line (§8.4). Original artwork, Tombatossals Softworks.
+       Light source: top-left. -->
+  <defs>
+    <linearGradient id="cht-b1" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F5D9A8"/>
+      <stop offset="1" stop-color="#E9B96E"/>
+    </linearGradient>
+    <linearGradient id="cht-b2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FCAF3E"/>
+      <stop offset="1" stop-color="#F57900"/>
+    </linearGradient>
+    <linearGradient id="cht-b3" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#F57900"/>
+      <stop offset="1" stop-color="#CE5C00"/>
+    </linearGradient>
+  </defs>
+  <rect x="6" y="6" width="36" height="36" rx="2"
+        fill="#FFFFFF" stroke="#888A85" stroke-width="1"/>
+  <g stroke="#EEEEEC" stroke-width="1">
+    <line x1="10" y1="14" x2="38" y2="14"/>
+    <line x1="10" y1="22" x2="38" y2="22"/>
+    <line x1="10" y1="30" x2="38" y2="30"/>
+  </g>
+  <rect x="11" y="28" width="7" height="10" fill="url(#cht-b1)"
+        stroke="#C17D11" stroke-width="1"/>
+  <rect x="20.5" y="22" width="7" height="16" fill="url(#cht-b2)"
+        stroke="#CE5C00" stroke-width="1"/>
+  <rect x="30" y="14" width="7" height="24" fill="url(#cht-b3)"
+        stroke="#8F5902" stroke-width="1"/>
+  <path d="M 11 25 L 20 19 L 28 15 L 37 10"
+        fill="none" stroke="#8F5902" stroke-width="2.2"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="37" cy="10" r="2.2" fill="#8F5902"/>
+</svg>

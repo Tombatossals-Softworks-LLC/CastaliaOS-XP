@@ -1,0 +1,5 @@
+add_executable(castalia-salvapantallas src/main.cpp)
+target_link_libraries(castalia-salvapantallas PRIVATE castalia-ui)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-salvapantallas PRIVATE -s)
+endif()

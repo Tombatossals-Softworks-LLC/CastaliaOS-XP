@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: text editor (Notas) — sheet and butter pencil (§8.4).
+       Original artwork, Tombatossals Softworks. Light source: top-left. -->
+  <defs>
+    <linearGradient id="txe-sheet" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EEEEEC"/>
+    </linearGradient>
+    <linearGradient id="txe-pencil" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FCE94F"/>
+      <stop offset="1" stop-color="#EDD400"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="6" width="26" height="34" rx="1"
+        fill="url(#txe-sheet)" stroke="#888A85" stroke-width="1"/>
+  <g stroke="#BABDB6" stroke-width="2" stroke-linecap="round">
+    <line x1="12" y1="13" x2="30" y2="13"/>
+    <line x1="12" y1="18" x2="30" y2="18"/>
+    <line x1="12" y1="23" x2="30" y2="23"/>
+    <line x1="12" y1="28" x2="22" y2="28"/>
+  </g>
+  <g transform="rotate(45 36 26)">
+    <rect x="33" y="8" width="6" height="24" rx="1"
+          fill="url(#txe-pencil)" stroke="#C4A000" stroke-width="1"/>
+    <path d="M 33 32 h 6 l -3 7 z" fill="#E9B96E"
+          stroke="#8F5902" stroke-width="1" stroke-linejoin="round"/>
+    <path d="M 34.9 36.5 l 2.2 0 l -1.1 2.5 z" fill="#2E3436"/>
+    <rect x="33" y="5" width="6" height="3.5" rx="1"
+          fill="#F57900" stroke="#CE5C00" stroke-width="1"/>
+  </g>
+</svg>

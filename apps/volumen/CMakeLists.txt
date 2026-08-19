@@ -1,0 +1,5 @@
+add_executable(castalia-volumen src/main.cpp)
+target_link_libraries(castalia-volumen PRIVATE castalia-ui)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-volumen PRIVATE -s)
+endif()

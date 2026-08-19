@@ -1,0 +1,17 @@
+Castalia Restore Points — snapshot/restore proof (recovery/tests/snapshot-smoke.sh)
+==================================================================================
+Runs the REAL rsync engine in temp dirs (no root). Builds a fake system, takes
+a point, breaks it (edit + delete + add), takes a second point, restores the
+first, and verifies:
+
+  OK  config revertido a v1
+  OK  archivo borrado restaurado
+  OK  archivo de la mala actualización eliminado
+  OK  bit de ejecución preservado
+  OK  archivo sin cambios compartido por enlace duro (dedup)
+  OK  punto pre-restauración creado (restauración reversible)
+  snapshot-smoke: PASS — Restore Points really work
+
+Also covered by 11 unit tests (recovery/tests/test_engine.py): rsync argv with
+--link-dest dedup, /home never captured, restore direction, list-newest-first,
+prune-keeps-newest, and the confirm gate (restore refused without confirm).

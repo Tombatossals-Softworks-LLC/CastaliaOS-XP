@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: image viewer — a tiny Human Dawn in a frame (§8.4).
+       Original artwork, Tombatossals Softworks. Light source: top-left. -->
+  <defs>
+    <linearGradient id="imv-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FCAF3E"/>
+      <stop offset="1" stop-color="#CE5C00"/>
+    </linearGradient>
+  </defs>
+  <rect x="6" y="9" width="36" height="30" rx="2"
+        fill="#FFFFFF" stroke="#888A85" stroke-width="1"/>
+  <rect x="9" y="12" width="30" height="24" fill="url(#imv-sky)"/>
+  <circle cx="31" cy="19" r="3.6" fill="#FCE94F"/>
+  <path d="M 9 30 L 17 22 L 24 29 L 29 25 L 39 33 L 39 36 L 9 36 Z"
+        fill="#8F5902"/>
+  <rect x="9" y="32" width="30" height="4" fill="#5A473B"/>
+</svg>

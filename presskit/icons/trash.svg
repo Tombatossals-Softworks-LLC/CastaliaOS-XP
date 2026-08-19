@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: recycle bin — brushed aluminium, tango shading (§8.4).
+       Original artwork, Tombatossals Softworks. Light source: top-left. -->
+  <defs>
+    <linearGradient id="trh-can" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#EEEEEC"/>
+      <stop offset="0.5" stop-color="#D3D7CF"/>
+      <stop offset="1" stop-color="#BABDB6"/>
+    </linearGradient>
+  </defs>
+  <ellipse cx="24" cy="42" rx="12" ry="2.2" fill="#2E3436" opacity="0.14"/>
+  <rect x="20" y="5" width="8" height="4" rx="2"
+        fill="#D3D7CF" stroke="#555753" stroke-width="1"/>
+  <rect x="12" y="8" width="24" height="5" rx="2.5"
+        fill="url(#trh-can)" stroke="#555753" stroke-width="1"/>
+  <path d="M 14 13 h 20 l -2 26 a 2 2 0 0 1 -2 2 H 18 a 2 2 0 0 1 -2 -2 Z"
+        fill="url(#trh-can)" stroke="#555753" stroke-width="1"/>
+  <g stroke="#888A85" stroke-width="2" stroke-linecap="round" opacity="0.7">
+    <line x1="19.5" y1="17" x2="20.3" y2="37"/>
+    <line x1="24"   y1="17" x2="24"   y2="37"/>
+    <line x1="28.5" y1="17" x2="27.7" y2="37"/>
+  </g>
+</svg>

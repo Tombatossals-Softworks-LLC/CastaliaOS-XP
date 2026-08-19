@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 48 48">
+  <!-- Castalia icon: documents — paper sheets, tango outline, one sun-orange
+       heading (§8.4). Original artwork, Tombatossals Softworks.
+       Light source: top-left. -->
+  <defs>
+    <linearGradient id="doc-sheet" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#EEEEEC"/>
+    </linearGradient>
+  </defs>
+  <rect x="16" y="6" width="22" height="30" rx="1"
+        fill="#F7F7F5" stroke="#BABDB6" stroke-width="1"/>
+  <path d="M 10 11 h 17 l 7 7 v 23 a 1 1 0 0 1 -1 1 H 10 a 1 1 0 0 1 -1 -1
+           V 12 a 1 1 0 0 1 1 -1 Z"
+        fill="url(#doc-sheet)" stroke="#888A85" stroke-width="1"/>
+  <path d="M 27 11 v 7 h 7 Z" fill="#D3D7CF" stroke="#888A85"
+        stroke-width="1" stroke-linejoin="round"/>
+  <g stroke-width="2" stroke-linecap="round">
+    <line x1="14" y1="19" x2="23" y2="19" stroke="#F57900"/>
+    <line x1="14" y1="24" x2="30" y2="24" stroke="#BABDB6"/>
+    <line x1="14" y1="29" x2="30" y2="29" stroke="#BABDB6"/>
+    <line x1="14" y1="34" x2="24" y2="34" stroke="#BABDB6"/>
+  </g>
+</svg>

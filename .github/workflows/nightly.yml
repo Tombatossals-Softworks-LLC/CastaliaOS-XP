@@ -1,0 +1,132 @@
+# Castalia OS — nightly pipeline (Project Bible §17.4).
+#
+# The heavy suite that is too slow for per-commit CI: REAL ISO builds for the
+# bootable editions, QEMU boot + framebuffer proofs at the FLOOR tier, the
+# installer's full install-to-disk-then-boot exercise, and a fresh
+# .deb + apt-repo distribution build. Artifacts are kept for a week so any
+# nightly regression ships with its evidence.
+#
+# Also runnable on demand (workflow_dispatch).
+
+name: Nightly
+
+on:
+  schedule:
+    - cron: "17 3 * * *"        # 03:17 UTC daily
+  workflow_dispatch:
+
+jobs:
+  iso-live:
+    name: live-amd64 ISO — build + FLOOR boot (Bible §18 P1, §19.1)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install ISO + boot toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            debootstrap squashfs-tools xorriso isolinux syslinux-common \
+            qemu-system-x86 python3
+
+      - name: Build the live-amd64 ISO
+        run: sudo sh build/mkiso.sh --edition live-amd64
+
+      - name: Boot it headless in QEMU and assert userspace (FLOOR tier)
+        run: |
+          sh tests/qemu/boot-smoke.sh \
+            build/out/iso/castalia-live-amd64.iso --timeout 300
+
+      - name: Upload the ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: castalia-live-amd64-iso
+          path: build/out/iso/castalia-live-amd64.iso
+          retention-days: 7
+
+  iso-desktop:
+    name: live-desktop-amd64 ISO — build + desktop proof (Bible §18 P2)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install ISO + boot toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            debootstrap squashfs-tools xorriso isolinux syslinux-common \
+            qemu-system-x86 python3
+
+      - name: Build the live-desktop ISO (Xorg + Openbox + Castalia shell)
+        run: sudo sh build/mkiso.sh --edition live-desktop-amd64
+
+      - name: Boot it and capture the desktop framebuffer
+        run: |
+          python3 tests/qemu/screenshot.py \
+            build/out/iso/castalia-live-desktop-amd64.iso \
+            --out castalia-desktop-live.png --wait 180 --mem 768
+          test -s castalia-desktop-live.png
+
+      - name: Upload the ISO + desktop proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: castalia-live-desktop-amd64
+          path: |
+            build/out/iso/castalia-live-desktop-amd64.iso
+            castalia-desktop-live.png
+            castalia-desktop-live.serial.log
+          retention-days: 7
+
+  installer-endtoend:
+    name: Installer — install to disk + boot the result (Bible §14)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install install + boot toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            debootstrap parted e2fsprogs rsync util-linux \
+            qemu-system-x86 python3
+
+      - name: Install to a disk with castalia-install, then boot it
+        run: |
+          sudo modprobe loop || true
+          sudo sh installer/tests/qemu-install.sh --timeout 480
+
+  dist:
+    name: Distribution — nightly .deb + apt overlay repo (Bible §13, §17.2)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install Qt5 + packaging toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            qtbase5-dev libqt5svg5-dev libxcb1-dev cmake g++ fonts-dejavu-core \
+            dpkg-dev
+
+      - name: Build shell + .deb + repo (nightly-stamped version)
+        run: |
+          PYTHONPATH=tools python3 tools/theme_export.py
+          cmake -S shell -B build/out/shell-build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/out/shell-build -j4
+          VER="$(tr -d ' \n' < VERSION)~nightly$(date -u +%Y%m%d)"
+          sh packages/mkdeb.sh --version "$VER"
+          sh build/mkrepo.sh
+
+      - name: Upload the nightly repo
+        uses: actions/upload-artifact@v4
+        with:
+          name: castalia-nightly-repo
+          path: build/out/repo/
+          retention-days: 7

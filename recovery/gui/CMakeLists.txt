@@ -1,0 +1,5 @@
+add_executable(castalia-recuperacion src/main.cpp)
+target_link_libraries(castalia-recuperacion PRIVATE castalia-ui)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-recuperacion PRIVATE -s)
+endif()

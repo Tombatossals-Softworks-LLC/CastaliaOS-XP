@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Castalia OS — Login Screen Preview</title>
+<style>
+:root{
+  --pg-bg:#101519; --pg-ink:#E8E4DC; --pg-ink2:#93A0AC; --pg-card:#171E25;
+  --pg-line:#26303A; --pg-accent:#6FA7C4;
+}
+:root[data-theme="light"]{
+  --pg-bg:#ECEDEA; --pg-ink:#22262B; --pg-ink2:#5D6873; --pg-card:#F7F7F4;
+  --pg-line:#D3D6D0; --pg-accent:#2C6699;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--pg-bg);color:var(--pg-ink);
+  font-family:Verdana,'DejaVu Sans',Geneva,Tahoma,sans-serif;
+  font-size:14px;line-height:1.55}
+.page{max-width:980px;margin:0 auto;padding:26px 20px 48px;
+  display:flex;flex-direction:column;gap:22px}
+h1{font-size:22px;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.eyebrow{margin:0;font-size:11px;text-transform:uppercase;
+  letter-spacing:.14em;color:var(--pg-accent)}
+.sub{margin:0;color:var(--pg-ink2);max-width:70ch;font-size:13px}
+code{font-family:'Cascadia Mono','DejaVu Sans Mono',Consolas,monospace;
+  font-size:.92em}
+
+/* ================= greeter tokens (Classic / High-Contrast) ============ */
+.greeter{
+  --card:rgba(236,233,228,.94); --card-line:#B8B2A6;
+  --ink:#1E1E1E; --ink2:#5A564E; --accent:#3E82B6; --accent-dk:#2C6699;
+  --on-accent:#FFFFFF; --err:#B3372E; --ring:#3E82B6;
+  --field:#FFFFFF; --field-ink:#1E1E1E;
+}
+.greeter.hc{
+  --card:rgba(0,0,0,.96); --card-line:#FFFFFF;
+  --ink:#FFFFFF; --ink2:#C8C8C8; --accent:#FFD800; --accent-dk:#B39800;
+  --on-accent:#000000; --err:#FF8A80; --ring:#FFD800;
+  --field:#101010; --field-ink:#FFFFFF;
+}
+
+/* ================= the screen ================= */
+.bezel{background:#000;border-radius:14px;padding:14px;
+  box-shadow:0 24px 60px rgba(0,0,0,.5), inset 0 0 0 1px #2A333C}
+.greeter{position:relative;width:100%;aspect-ratio:4/3;overflow:hidden;
+  border-radius:4px;background:#0A141F;color:var(--ink)}
+.wall{position:absolute;inset:-3%;transform:scale(1)}
+.wall svg{width:100%;height:100%;display:block}
+@media (prefers-reduced-motion:no-preference){
+  .greeter.live .wall{animation:drift 12s ease-in-out infinite alternate}
+}
+@keyframes drift{from{transform:scale(1) translateY(0)}
+  to{transform:scale(1.04) translateY(-.6%)}}
+.scrim{position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(6,16,26,0) 40%,rgba(6,16,26,.45) 100%)}
+.greeter.hc .scrim{background:rgba(0,0,0,.62)}
+
+/* top bar */
+.topbar{position:absolute;top:0;left:0;right:0;display:flex;
+  justify-content:space-between;align-items:flex-start;padding:16px 20px;
+  color:#F2F0EB;text-shadow:0 1px 3px rgba(0,0,0,.6)}
+.tmark{width:30px;height:30px;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))}
+.tmark svg{width:100%;height:100%}
+.clockbox{text-align:right}
+.bigclock{font-size:clamp(20px,3.4vw,32px);font-weight:700;
+  font-variant-numeric:tabular-nums;letter-spacing:.02em}
+.bigdate{font-size:clamp(10px,1.5vw,13px);opacity:.9;text-transform:capitalize}
+
+/* ================= login card ================= */
+.card{position:absolute;left:50%;top:50%;width:min(76%,360px);
+  transform:translate(-50%,-46%);opacity:0;
+  background:var(--card);border:1px solid var(--card-line);border-radius:6px;
+  box-shadow:0 12px 34px rgba(6,16,26,.45);padding:22px 22px 18px;
+  display:flex;flex-direction:column;gap:14px}
+.greeter.live .card{animation:cardin .6s cubic-bezier(.2,.7,.3,1) .25s forwards}
+@keyframes cardin{to{opacity:1;transform:translate(-50%,-50%)}}
+@media (prefers-reduced-motion:reduce){
+  .greeter.live .card{animation:none;opacity:1;transform:translate(-50%,-50%)}
+}
+.card.shake{animation:shake .35s ease-in-out}
+@keyframes shake{0%,100%{transform:translate(-50%,-50%)}
+  20%{transform:translate(calc(-50% - 8px),-50%)}
+  45%{transform:translate(calc(-50% + 8px),-50%)}
+  70%{transform:translate(calc(-50% - 5px),-50%)}}
+.chead{display:flex;align-items:center;gap:10px}
+.chead .cxm{width:34px;height:34px}
+.chead .cxm svg{width:100%;height:100%}
+.chead b{font-size:16px;letter-spacing:.02em}
+.chead span{display:block;font-size:10.5px;color:var(--ink2);
+  text-transform:uppercase;letter-spacing:.12em}
+
+.tiles{display:flex;flex-direction:column;gap:8px}
+.tile{display:flex;align-items:center;gap:12px;width:100%;
+  font:inherit;font-size:13.5px;color:var(--ink);text-align:left;
+  background:transparent;border:1px solid transparent;border-radius:6px;
+  padding:8px 10px;cursor:pointer;
+  transition:transform .18s ease, background .18s ease}
+.tile:hover{background:rgba(62,130,182,.10)}
+.greeter.hc .tile:hover{background:rgba(255,216,0,.15)}
+.tile.sel{border-color:var(--ring);box-shadow:0 0 0 1px var(--ring);
+  transform:translateY(-2px);background:rgba(62,130,182,.08)}
+.greeter.hc .tile.sel{background:rgba(255,216,0,.12)}
+.tile:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.avatar{width:48px;height:48px;border-radius:50%;flex:none;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:19px;color:#FFFFFF;
+  border:2px solid rgba(255,255,255,.75);
+  box-shadow:0 2px 6px rgba(0,0,0,.25)}
+.av-dave{background:radial-gradient(circle at 32% 28%,#5D9BC8,#2C6699)}
+.av-guest{background:radial-gradient(circle at 32% 28%,#CBB58E,#8A7A5C)}
+.tile small{display:block;color:var(--ink2);font-size:11px}
+
+/* password row (slides open) */
+.pwrow{overflow:hidden;max-height:0;opacity:0;
+  transition:max-height .22s ease-out, opacity .22s ease-out}
+.pwrow.open{max-height:140px;opacity:1}
+.pwline{display:flex;gap:8px;margin-top:2px}
+.pwin{flex:1;font:inherit;font-size:13.5px;color:var(--field-ink);
+  background:var(--field);border:1px solid var(--card-line);border-radius:4px;
+  padding:8px 10px}
+.pwin:focus-visible{outline:2px solid var(--ring);outline-offset:1px}
+.enter{font:inherit;font-size:13px;font-weight:700;color:var(--on-accent);
+  background:linear-gradient(180deg,var(--accent),var(--accent-dk));
+  border:1px solid var(--accent-dk);border-radius:4px;padding:8px 16px;
+  cursor:pointer;min-width:86px}
+.greeter.hc .enter{background:var(--accent)}
+.enter:focus-visible{outline:2px solid var(--ring);outline-offset:2px}
+.pwmsg{min-height:1.2em;font-size:11.5px;color:var(--err);margin:6px 2px 0}
+.pwhint{font-size:10.5px;color:var(--ink2);margin:2px 2px 0}
+.caps{display:none;font-size:10.5px;color:var(--err);margin:4px 2px 0}
+.caps.on{display:block}
+
+/* success overlay inside card */
+.welcome{display:none;flex-direction:column;align-items:center;gap:10px;
+  padding:12px 0 6px;text-align:center}
+.welcome.on{display:flex}
+.spin{width:26px;height:26px;border-radius:50%;
+  border:3px solid rgba(62,130,182,.25);border-top-color:var(--accent);
+  animation:spin .7s linear infinite}
+.greeter.hc .spin{border-color:rgba(255,216,0,.25);border-top-color:var(--accent)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.check{display:none;width:26px;height:26px}
+.check.on{display:block}
+.check svg{width:100%;height:100%}
+.wname{font-size:15px;font-weight:700}
+.wsub{font-size:11.5px;color:var(--ink2)}
+
+/* bottom bar */
+.botbar{position:absolute;left:0;right:0;bottom:0;display:flex;
+  justify-content:space-between;align-items:center;padding:12px 18px;
+  color:#F2F0EB;text-shadow:0 1px 3px rgba(0,0,0,.6);font-size:12px}
+.bbtn{display:inline-flex;align-items:center;gap:7px;font:inherit;
+  font-size:12px;color:#F2F0EB;cursor:pointer;background:rgba(6,16,26,.42);
+  border:1px solid rgba(255,255,255,.28);border-radius:6px;padding:6px 12px}
+.bbtn:hover{background:rgba(6,16,26,.6)}
+.bbtn:focus-visible{outline:2px solid #FFFFFF;outline-offset:2px}
+.bbtn .gl{display:inline-block;width:14px;height:14px}
+.gl svg{width:100%;height:100%;display:block}
+.sessionchip{background:rgba(6,16,26,.42);border:1px solid rgba(255,255,255,.22);
+  border-radius:999px;padding:5px 14px}
+
+/* desktop handoff */
+.handoff{position:absolute;inset:0;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:14px;opacity:0;
+  pointer-events:none;color:#F2F0EB;
+  background:radial-gradient(70% 70% at 50% 40%,#3E82B6 0%,#24567F 100%);
+  transition:opacity .7s ease}
+.handoff.on{opacity:1;pointer-events:auto}
+.handoff .hmark{width:64px;height:64px}
+.hmark svg{width:100%;height:100%}
+.handoff p{margin:0;font-size:14px}
+.handoff .hsub{font-size:11.5px;opacity:.8}
+
+/* ================= page controls + spec ================= */
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{font:inherit;font-size:13px;color:var(--pg-ink);cursor:pointer;
+  background:var(--pg-card);border:1px solid var(--pg-line);
+  border-radius:8px;padding:8px 18px}
+.btn.primary{border-color:var(--pg-accent);
+  box-shadow:0 0 0 1px var(--pg-accent) inset;font-weight:700}
+.btn[aria-pressed="true"]{background:var(--pg-accent);color:#0E1520}
+.btn:focus-visible{outline:2px solid var(--pg-accent);outline-offset:2px}
+.hintline{font-size:12px;color:var(--pg-ink2)}
+.spec{background:var(--pg-card);border:1px solid var(--pg-line);
+  border-radius:12px;padding:16px 18px;overflow-x:auto}
+.spec h2{font-size:14px;margin:0 0 10px;text-transform:uppercase;
+  letter-spacing:.08em;color:var(--pg-ink2)}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+td,th{padding:5px 10px;text-align:left;border-bottom:1px solid var(--pg-line)}
+tr:last-child td{border-bottom:none}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--pg-ink2)}
+.foot{font-size:12px;color:var(--pg-ink2);max-width:80ch}
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <p class="eyebrow">Tombatossals Softworks · greeter · spec animada e interactiva</p>
+    <h1>Castalia OS — Pantalla de acceso</h1>
+    <p class="sub">Demo funcional del greeter (Bible §6.6): selecciona un usuario, prueba la
+    contraseña <code>castalia</code> (o una incorrecta, para ver el error), entra como invitado,
+    y activa el <strong>modo alto contraste</strong> — un solo toggle re-viste todo el greeter
+    desde los tokens del tema.</p>
+  </header>
+
+  <div class="bezel">
+    <div class="greeter live" id="greeter">
+      <div class="wall" aria-hidden="true">
+        <svg viewBox="0 0 1024 768" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <linearGradient id="lsky" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#2E6FA3"/><stop offset="0.55" stop-color="#8FBEDD"/>
+              <stop offset="0.98" stop-color="#F0E2C6"/>
+            </linearGradient>
+            <linearGradient id="lsea" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#7FB0D4"/><stop offset="0.35" stop-color="#3E82B6"/>
+              <stop offset="1" stop-color="#24567F"/>
+            </linearGradient>
+            <radialGradient id="lglow" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0" stop-color="#FFF2D0" stop-opacity="0.85"/>
+              <stop offset="0.6" stop-color="#FFE9B8" stop-opacity="0.25"/>
+              <stop offset="1" stop-color="#FFE9B8" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <rect width="1024" height="500" fill="url(#lsky)"/>
+          <circle cx="700" cy="440" r="150" fill="url(#lglow)"/>
+          <circle cx="700" cy="440" r="34" fill="#FBEED2"/>
+          <rect y="500" width="1024" height="268" fill="url(#lsea)"/>
+          <g fill="#FFF2D0">
+            <ellipse cx="700" cy="512" rx="60" ry="3.5" opacity="0.55"/>
+            <ellipse cx="688" cy="530" rx="44" ry="3" opacity="0.42"/>
+            <ellipse cx="712" cy="552" rx="52" ry="3" opacity="0.32"/>
+          </g>
+          <g fill="#3B4A36">
+            <path d="M 0 500 L 0 405 Q 60 392 110 402 Q 175 415 232 452 Q 268 476 300 500 Z"/>
+          </g>
+          <g fill="#333F2F">
+            <rect x="96" y="330" width="46" height="76"/>
+            <rect x="96" y="318" width="10" height="14"/><rect x="114" y="318" width="10" height="14"/>
+            <rect x="132" y="318" width="10" height="14"/>
+            <rect x="142" y="372" width="52" height="36"/>
+          </g>
+          <rect x="115" y="352" width="7" height="11" fill="#F5D9A0" opacity="0.9"/>
+          <path d="M 1024 500 L 1024 452 Q 950 440 880 458 Q 830 472 790 500 Z"
+                fill="#4A5C6B" opacity="0.55"/>
+        </svg>
+      </div>
+      <div class="scrim"></div>
+
+      <div class="topbar">
+        <span class="tmark" aria-hidden="true"><svg viewBox="0 0 48 48">
+          <g stroke="#8A7A5C" stroke-width="1"><rect x="14" y="10" width="20" height="27" fill="#D8C49A"/>
+          <rect x="14" y="6" width="4" height="6" fill="#D8C49A"/><rect x="22" y="6" width="4" height="6" fill="#D8C49A"/>
+          <rect x="30" y="6" width="4" height="6" fill="#D8C49A"/></g>
+          <path d="M 21 37 L 21 29 A 3 3 0 0 1 27 29 L 27 37 Z" fill="#2C6699"/>
+          <path d="M 0 40 Q 6 35 12 40 T 24 40 T 36 40 T 48 40 L 48 48 L 0 48 Z" fill="#3E82B6"/>
+          <path d="M 0 44 Q 6 40 12 44 T 24 44 T 36 44 T 48 44 L 48 48 L 0 48 Z" fill="#2C6699"/>
+        </svg></span>
+        <div class="clockbox">
+          <div class="bigclock" id="clock">--:--</div>
+          <div class="bigdate" id="date"></div>
+        </div>
+      </div>
+
+      <div class="card" id="card">
+        <div class="chead">
+          <span class="cxm" aria-hidden="true"><svg viewBox="0 0 48 48">
+            <g stroke="#8A7A5C" stroke-width="1"><rect x="14" y="10" width="20" height="27" fill="#D8C49A"/>
+            <rect x="14" y="6" width="4" height="6" fill="#D8C49A"/><rect x="22" y="6" width="4" height="6" fill="#D8C49A"/>
+            <rect x="30" y="6" width="4" height="6" fill="#D8C49A"/></g>
+            <path d="M 21 37 L 21 29 A 3 3 0 0 1 27 29 L 27 37 Z" fill="#2C6699"/>
+            <path d="M 0 40 Q 6 35 12 40 T 24 40 T 36 40 T 48 40 L 48 48 L 0 48 Z" fill="#3E82B6"/>
+            <path d="M 0 44 Q 6 40 12 44 T 24 44 T 36 44 T 48 44 L 48 48 L 0 48 Z" fill="#2C6699"/>
+          </svg></span>
+          <div><b>Castalia OS</b><span>Classic · 1.0 «Peñíscola»</span></div>
+        </div>
+
+        <div id="loginui">
+          <div class="tiles" role="group" aria-label="Usuarios">
+            <button class="tile" id="tile-dave" data-user="Dave">
+              <span class="avatar av-dave" aria-hidden="true">D</span>
+              <span>Dave<small>Administrador</small></span>
+            </button>
+            <div class="pwrow" id="pwrow">
+              <div class="pwline">
+                <input class="pwin" id="pwin" type="password"
+                       placeholder="Contraseña" aria-label="Contraseña de Dave">
+                <button class="enter" id="enter">Entrar</button>
+              </div>
+              <p class="caps" id="caps">⇪ Bloq Mayús activado</p>
+              <p class="pwmsg" id="pwmsg" role="alert"></p>
+              <p class="pwhint">demo: la contraseña es «castalia»</p>
+            </div>
+            <button class="tile" id="tile-guest" data-user="Invitado">
+              <span class="avatar av-guest" aria-hidden="true">I</span>
+              <span>Invitado<small>Sesión temporal, sin contraseña</small></span>
+            </button>
+          </div>
+        </div>
+
+        <div class="welcome" id="welcome">
+          <div class="spin" id="spin"></div>
+          <span class="check" id="check" aria-hidden="true"><svg viewBox="0 0 26 26">
+            <circle cx="13" cy="13" r="12" fill="none" stroke="#3E82B6" stroke-width="2"/>
+            <path d="M 7 13.5 L 11.5 18 L 19 9" fill="none" stroke="#3E82B6"
+                  stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg></span>
+          <span class="wname" id="wname">Bienvenido</span>
+          <span class="wsub">Iniciando tu sesión…</span>
+        </div>
+      </div>
+
+      <div class="botbar">
+        <button class="bbtn" id="hc" aria-pressed="false">
+          <span class="gl" aria-hidden="true"><svg viewBox="0 0 14 14">
+            <circle cx="7" cy="7" r="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M 7 1 A 6 6 0 0 1 7 13 Z" fill="currentColor"/>
+          </svg></span>
+          Alto contraste
+        </button>
+        <span class="sessionchip">Sesión: Castalia Classic</span>
+        <span style="display:flex;gap:8px">
+          <button class="bbtn"><span class="gl" aria-hidden="true"><svg viewBox="0 0 14 14">
+            <path d="M 7 2 A 5 5 0 1 0 12 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+            <path d="M 12 3 L 12 7 L 8 7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg></span>Reiniciar</button>
+          <button class="bbtn"><span class="gl" aria-hidden="true"><svg viewBox="0 0 14 14">
+            <circle cx="7" cy="8" r="5" fill="none" stroke="currentColor" stroke-width="1.6"/>
+            <line x1="7" y1="1" x2="7" y2="6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+          </svg></span>Apagar</button>
+        </span>
+      </div>
+
+      <div class="handoff" id="handoff">
+        <span class="hmark" aria-hidden="true"><svg viewBox="0 0 48 48">
+          <g stroke="#8A7A5C" stroke-width="1"><rect x="14" y="10" width="20" height="27" fill="#D8C49A"/>
+          <rect x="14" y="6" width="4" height="6" fill="#D8C49A"/><rect x="22" y="6" width="4" height="6" fill="#D8C49A"/>
+          <rect x="30" y="6" width="4" height="6" fill="#D8C49A"/></g>
+          <path d="M 21 37 L 21 29 A 3 3 0 0 1 27 29 L 27 37 Z" fill="#2C6699"/>
+          <rect x="23" y="15" width="2" height="6" fill="#F5D9A0"/>
+          <path d="M 0 40 Q 6 35 12 40 T 24 40 T 36 40 T 48 40 L 48 48 L 0 48 Z" fill="#3E82B6"/>
+          <path d="M 0 44 Q 6 40 12 44 T 24 44 T 36 44 T 48 44 L 48 48 L 0 48 Z" fill="#2C6699"/>
+        </svg></span>
+        <p id="hname">Bienvenido, Dave</p>
+        <p class="hsub">Preparando tu escritorio…</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <button class="btn primary" id="reset">⟲ Reiniciar demo</button>
+    <span class="hintline">Teclado: Tab recorre usuarios → contraseña → botones · Enter activa · Esc vuelve a la lista</span>
+  </div>
+
+  <div class="spec">
+    <h2>Estados</h2>
+    <table>
+      <thead><tr><th>estado</th><th>comportamiento</th></tr></thead>
+      <tbody>
+        <tr><td>Carga</td><td>La tarjeta sube 16 px con fundido (600 ms); el fondo deriva 12 s (se detiene con reduce-motion)</td></tr>
+        <tr><td>Selección</td><td>Anillo azur + elevación 2 px; la fila de contraseña se despliega (220 ms) con autofoco</td></tr>
+        <tr><td>Error</td><td>Sacudida ±8 px (350 ms) + «Contraseña incorrecta» en terracota; el campo se limpia y re-enfoca</td></tr>
+        <tr><td>Éxito</td><td>Spinner 400 ms → check → «Bienvenido, {usuario}» → crossfade 700 ms al escritorio</td></tr>
+        <tr><td>Invitado</td><td>Entra directo, sin contraseña</td></tr>
+        <tr><td>Alto contraste</td><td>Un toggle re-viste el greeter completo con los tokens del tema high-contrast</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p class="foot">Spec de ingeniería en <code>branding/login/README.md</code>: greeter LightDM
+  sobre los mismos tokens <code>theme.conf</code> del escritorio, ≤ 12 MB RSS, primer pintado
+  &lt; 1 s en FLOOR, 100 % operable por teclado, cabe en 800×600.</p>
+</div>
+
+<script>
+(function(){
+  var g=document.getElementById('greeter');
+  var card=document.getElementById('card');
+  var pwrow=document.getElementById('pwrow');
+  var pwin=document.getElementById('pwin');
+  var pwmsg=document.getElementById('pwmsg');
+  var caps=document.getElementById('caps');
+  var tileD=document.getElementById('tile-dave');
+  var tileG=document.getElementById('tile-guest');
+  var enter=document.getElementById('enter');
+  var loginui=document.getElementById('loginui');
+  var welcome=document.getElementById('welcome');
+  var spin=document.getElementById('spin');
+  var check=document.getElementById('check');
+  var wname=document.getElementById('wname');
+  var handoff=document.getElementById('handoff');
+  var hname=document.getElementById('hname');
+  var reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  /* live clock */
+  function tick(){
+    var now=new Date();
+    document.getElementById('clock').textContent=
+      now.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('date').textContent=
+      now.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  }
+  tick(); setInterval(tick,10000);
+
+  function selectDave(){
+    tileD.classList.add('sel'); tileG.classList.remove('sel');
+    pwrow.classList.add('open');
+    setTimeout(function(){pwin.focus();}, reduced?0:230);
+  }
+  function deselect(){
+    tileD.classList.remove('sel'); pwrow.classList.remove('open');
+    pwmsg.textContent=''; pwin.value='';
+  }
+  tileD.addEventListener('click',selectDave);
+  g.addEventListener('keydown',function(e){
+    if(e.key==='Escape'){deselect(); tileD.focus();}
+  });
+  pwin.addEventListener('keydown',function(e){
+    if(e.getModifierState) caps.classList.toggle('on',e.getModifierState('CapsLock'));
+    if(e.key==='Enter') attempt();
+  });
+  enter.addEventListener('click',attempt);
+
+  function attempt(){
+    if(pwin.value==='castalia'){ succeed('Dave'); return; }
+    pwmsg.textContent='Contraseña incorrecta';
+    pwin.value=''; pwin.focus();
+    if(!reduced){
+      card.classList.remove('shake'); void card.offsetWidth;
+      card.classList.add('shake');
+    }
+  }
+
+  function succeed(user){
+    loginui.style.display='none';
+    welcome.classList.add('on');
+    wname.textContent='Bienvenido, '+user;
+    hname.textContent='Bienvenido, '+user;
+    var t1=reduced?0:400, t2=reduced?100:1100;
+    setTimeout(function(){spin.style.display='none';check.classList.add('on');},t1);
+    setTimeout(function(){handoff.classList.add('on');},t2);
+  }
+  tileG.addEventListener('click',function(){succeed('Invitado');});
+
+  /* high contrast toggle */
+  var hc=document.getElementById('hc');
+  hc.addEventListener('click',function(){
+    var on=!g.classList.contains('hc');
+    g.classList.toggle('hc',on);
+    hc.setAttribute('aria-pressed',on?'true':'false');
+  });
+
+  /* reset */
+  document.getElementById('reset').addEventListener('click',function(){
+    handoff.classList.remove('on');
+    welcome.classList.remove('on');
+    spin.style.display=''; check.classList.remove('on');
+    loginui.style.display='';
+    deselect();
+    g.classList.remove('live'); void g.offsetWidth; g.classList.add('live');
+  });
+})();
+</script>
+</body>
+</html>

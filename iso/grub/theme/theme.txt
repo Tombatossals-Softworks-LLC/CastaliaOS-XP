@@ -1,0 +1,74 @@
+# Castalia OS — GRUB2 gfxmenu theme (Bible §6.2)
+# Background is baked by tools/bootbg_gen.py -> iso/boot-bg/splash.png and
+# copied next to this file at ISO build time. Fonts (.pf2) are generated at
+# build time with grub-mkfont from the DejaVu family:
+#   grub-mkfont -s 14 -o dejavu_14.pf2  DejaVuSans.ttf
+#   grub-mkfont -s 12 -o dejavu_12.pf2  DejaVuSans.ttf
+#   grub-mkfont -s 20 -o dejavu_20b.pf2 DejaVuSans-Bold.ttf
+
+desktop-image: "splash.png"
+desktop-color: "#0A141F"
+title-text: ""
+terminal-font: "DejaVu Sans Regular 12"
+terminal-box: "terminal_box_*.png"
+
+# ---- product wordmark ----
++ label {
+    top = 18%
+    left = 0
+    width = 100%
+    align = "center"
+    color = "#E8E4DC"
+    font = "DejaVu Sans Bold 20"
+    text = "C A S T A L I A"
+}
++ label {
+    top = 18%+34
+    left = 0
+    width = 100%
+    align = "center"
+    color = "#7FA6C4"
+    font = "DejaVu Sans Regular 12"
+    text = "CLASSIC"
+}
+
+# ---- boot menu ----
++ boot_menu {
+    left = 25%
+    top = 34%
+    width = 50%
+    height = 42%
+    item_font = "DejaVu Sans Regular 14"
+    item_color = "#DCEBF5"
+    selected_item_color = "#FFFFFF"
+    item_height = 28
+    item_padding = 6
+    item_spacing = 4
+    icon_width = 0
+    icon_height = 0
+}
+
+# ---- timeout ----
++ progress_bar {
+    id = "__timeout__"
+    left = 25%
+    top = 80%
+    width = 50%
+    height = 14
+    font = "DejaVu Sans Regular 12"
+    text_color = "#7FA6C4"
+    fg_color = "#3E82B6"
+    bg_color = "#132638"
+    border_color = "#132638"
+    text = "@TIMEOUT_NOTIFICATION_MIDDLE@"
+}
+
++ label {
+    top = 92%
+    left = 0
+    width = 100%
+    align = "center"
+    color = "#4E6E88"
+    font = "DejaVu Sans Regular 12"
+    text = "Tombatossals Softworks"
+}

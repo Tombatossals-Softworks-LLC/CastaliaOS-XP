@@ -1,0 +1,5 @@
+add_executable(castalia-calendario src/main.cpp)
+target_link_libraries(castalia-calendario PRIVATE castalia-ui)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-calendario PRIVATE -s)
+endif()

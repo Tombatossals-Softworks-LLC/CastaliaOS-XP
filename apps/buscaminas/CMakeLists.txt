@@ -1,0 +1,5 @@
+add_executable(castalia-buscaminas src/main.cpp)
+target_link_libraries(castalia-buscaminas PRIVATE castalia-ui)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-buscaminas PRIVATE -s)
+endif()

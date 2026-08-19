@@ -1,0 +1,329 @@
+# Castalia OS — release pipeline (Project Bible §17.3–§17.5, ci/README.md).
+#
+# Runs on a version tag (v<MAJOR>.<MINOR>[.<PATCH>], matching the repo-root
+# VERSION file) and produces everything distributable:
+#
+#   * castalia-desktop .deb + the apt overlay repo (tarred)
+#   * live-amd64 ISO         — QEMU-boot-verified at the FLOOR tier
+#   * live-desktop-amd64 ISO — graphical desktop framebuffer-verified
+#   * SHA256SUMS (+ .asc when a signing key is configured)
+#
+# …and attaches them to the tag's GitHub Release. Per Bible §17.3 a Stable
+# publish is human-gated, so an AUTOMATIC tag push produces a DRAFT for a
+# person to review and click Publish. An explicit `workflow_dispatch` with
+# publish=true IS that human approval, so it publishes live — this is also the
+# recovery path for a tag whose original run built nothing (e.g. the tag
+# predated the VERSION bump), since it derives the tag from the VERSION file
+# and never has to move a protected tag. Assets are refreshed in place, so a
+# re-run never destroys an existing release. Signing keys are NEVER in this
+# repo; if the CASTALIA_SIGNING_KEY / CASTALIA_SIGNING_PASSPHRASE secrets are
+# configured the checksums are GPG-signed, otherwise that step is skipped.
+#
+# A plain workflow_dispatch (publish=false) rehearses every stage but ships
+# nothing.
+
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish live to the vVERSION release (this dispatch is the human approval; recovery when the tag predates the VERSION bump)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  gates:
+    name: Full QA gate (lint, unit, design/legal gates, build, render, E2E)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Tag must match the VERSION file (§17.5)
+        if: github.ref_type == 'tag'
+        run: |
+          want="v$(tr -d ' \n' < VERSION)"
+          [ "${GITHUB_REF_NAME}" = "$want" ] || {
+            echo "tag ${GITHUB_REF_NAME} does not match VERSION ($want)" >&2
+            exit 1; }
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install the full QA toolchain
+        run: |
+          pip install ruff==0.15.8  # pinned; rule selection pinned in ruff.toml
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            qtbase5-dev libqt5svg5-dev libxcb1-dev cmake g++ fonts-dejavu-core \
+            xvfb openbox x11-utils imagemagick dpkg-dev
+
+      - name: tests/run.sh full — the whole per-commit surface in one gate
+        run: sh tests/run.sh full
+
+  package:
+    name: Package — .deb + apt overlay repo
+    needs: gates
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install Qt5 + packaging toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            qtbase5-dev libqt5svg5-dev libxcb1-dev cmake g++ fonts-dejavu-core \
+            dpkg-dev
+
+      - name: Build shell + .deb
+        run: |
+          PYTHONPATH=tools python3 tools/theme_export.py
+          cmake -S shell -B build/out/shell-build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/out/shell-build -j4
+          sh packages/mkdeb.sh
+
+      - name: Assemble the apt overlay repo (GPG-signed when the key is set)
+        env:
+          SIGNING_KEY: ${{ secrets.CASTALIA_SIGNING_KEY }}
+          CASTALIA_SIGN_PASSPHRASE: ${{ secrets.CASTALIA_SIGNING_PASSPHRASE }}
+        run: |
+          if [ -n "$SIGNING_KEY" ]; then
+            printf '%s' "$SIGNING_KEY" | gpg --batch --import
+            keyid=$(gpg --list-secret-keys --with-colons \
+                      | awk -F: '/^sec:/{print $5; exit}')
+            [ -n "$keyid" ] || { echo "imported key but no key id" >&2; exit 1; }
+            sh build/mkrepo.sh --sign "$keyid"
+            # a signed repo MUST carry the apt trust files
+            test -s build/out/repo/dists/castalia/InRelease
+            test -s build/out/repo/dists/castalia/Release.gpg
+            echo "release repo signed with $keyid"
+          else
+            echo "no CASTALIA_SIGNING_KEY secret — unsigned repo (§17.3)"
+            sh build/mkrepo.sh
+          fi
+
+      - name: Install + run the packaged desktop (release sanity)
+        run: |
+          sudo apt-get install -y ./build/out/deb/castalia-desktop_*.deb
+          QT_QPA_PLATFORM=offscreen castalia-calc --theme classic \
+            --repo /usr/share/castalia --screenshot /tmp/installed-calc.png
+          test -s /tmp/installed-calc.png
+
+      - name: Tar the apt repo
+        run: |
+          ver=$(tr -d ' \n' < VERSION)
+          tar -C build/out -czf "castalia-repo-$ver.tar.gz" repo
+
+      - name: Upload packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-packages
+          path: |
+            build/out/deb/*.deb
+            castalia-repo-*.tar.gz
+
+  iso-live:
+    name: ISO — live-amd64 (built + FLOOR boot-verified)
+    needs: gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install ISO + boot toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            debootstrap squashfs-tools xorriso isolinux syslinux-common \
+            qemu-system-x86 python3
+
+      - name: Build the live-amd64 ISO
+        run: sudo sh build/mkiso.sh --edition live-amd64
+
+      - name: "Boot-verify in QEMU (FLOOR: 1 vCPU, 512 MB, TCG)"
+        run: |
+          sh tests/qemu/boot-smoke.sh \
+            build/out/iso/castalia-live-amd64.iso --timeout 300
+
+      - name: Upload the ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-iso-live
+          path: build/out/iso/castalia-live-amd64.iso
+
+  iso-desktop:
+    name: ISO — live-desktop-amd64 (built + desktop framebuffer-verified)
+    needs: gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Install ISO + boot toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            debootstrap squashfs-tools xorriso isolinux syslinux-common \
+            qemu-system-x86 python3
+
+      - name: Build the live-desktop ISO (Xorg + Openbox + Castalia shell)
+        run: sudo sh build/mkiso.sh --edition live-desktop-amd64
+
+      - name: Boot it and verify the desktop framebuffer renders
+        run: |
+          python3 tests/qemu/screenshot.py \
+            build/out/iso/castalia-live-desktop-amd64.iso \
+            --out castalia-desktop-live.png --wait 180 --mem 768
+          test -s castalia-desktop-live.png
+
+      - name: Upload the ISO + desktop proof
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-iso-desktop
+          path: |
+            build/out/iso/castalia-live-desktop-amd64.iso
+            castalia-desktop-live.png
+
+  publish:
+    name: Publish the GitHub Release (draft on tag push; live on publish dispatch)
+    needs: [package, iso-live, iso-desktop]
+    if: github.ref_type == 'tag' || (github.event_name == 'workflow_dispatch' && inputs.publish)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Download all release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: Stage versioned assets + SHA256SUMS
+        run: |
+          ver=$(tr -d ' \n' < VERSION)
+          mkdir -p out
+          # artifacts may be nested (multi-path uploads keep their tree)
+          find dist -name '*.deb' -exec cp {} out/ \;
+          find dist -name 'castalia-repo-*.tar.gz' -exec cp {} out/ \;
+          find dist -name 'castalia-live-amd64.iso' \
+               -exec cp {} "out/castalia-live-amd64-$ver.iso" \;
+          find dist -name 'castalia-live-desktop-amd64.iso' \
+               -exec cp {} "out/castalia-live-desktop-amd64-$ver.iso" \;
+          find dist -name 'castalia-desktop-live.png' \
+               -exec cp {} "out/desktop-proof-$ver.png" \;
+          for f in "out/castalia-desktop_${ver}_amd64.deb" \
+                   "out/castalia-repo-$ver.tar.gz" \
+                   "out/castalia-live-amd64-$ver.iso" \
+                   "out/castalia-live-desktop-amd64-$ver.iso" \
+                   "out/desktop-proof-$ver.png"; do
+            [ -s "$f" ] || { echo "missing release asset: $f" >&2; exit 1; }
+          done
+          (cd out && sha256sum ./* > SHA256SUMS)
+          cat out/SHA256SUMS
+
+      - name: Sign the checksums (only if the release key is configured)
+        env:
+          KEY: ${{ secrets.CASTALIA_SIGNING_KEY }}
+          PASS: ${{ secrets.CASTALIA_SIGNING_PASSPHRASE }}
+        run: |
+          if [ -z "$KEY" ]; then
+            echo "no CASTALIA_SIGNING_KEY secret — skipping signature (§17.3)"
+            exit 0
+          fi
+          printf '%s' "$KEY" | gpg --batch --import
+          printf '%s' "$PASS" | gpg --batch --yes --pinentry-mode loopback \
+            --passphrase-fd 0 --armor --detach-sign \
+            -o out/SHA256SUMS.asc out/SHA256SUMS
+          echo "signed: SHA256SUMS.asc"
+
+      - name: Publish the GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ver=$(tr -d ' \n' < VERSION)
+          # On a tag push GITHUB_REF_NAME is the tag; on a workflow_dispatch it
+          # is the branch, so derive the release tag from the VERSION file. The
+          # tag must already exist in the remote (gh --verify-tag on create).
+          tag="v$ver"
+
+          # §17.3: an automatic tag push yields a DRAFT for a human to review
+          # and publish. An explicit publish=true dispatch IS that approval, so
+          # it goes live (and is the recovery path when the tag predates the
+          # VERSION bump).
+          live=false
+          [ "$GITHUB_EVENT_NAME" = workflow_dispatch ] && live=true
+
+          # Reproducibility: a tag push checks out the tag itself, so its build
+          # is tag-driven. A publish dispatch builds from the branch head, so
+          # record exactly which commit produced these assets.
+          built="$GITHUB_SHA"
+          if [ "$live" = true ] && [ "$GITHUB_REF_TYPE" != tag ]; then
+            tag_sha=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$tag" \
+                        --jq '.object.sha' 2>/dev/null || echo "")
+            if [ -n "$tag_sha" ] && [ "$tag_sha" != "$built" ]; then
+              echo "::warning::publishing $tag from $built (tag ref points at $tag_sha) — recovery publish"
+            fi
+          fi
+
+          cat > notes.md <<EOF
+          # Castalia OS $ver
+
+          Everything below came out of this tag's release pipeline: the full
+          QA gate (lint, unit suites, design-system + provenance gates, the
+          offscreen render of every app in every theme, and the live E2E of
+          the whole suite under Openbox) passed first, and each ISO was then
+          booted in QEMU — the desktop image up to a verified graphical
+          framebuffer — before being attached here.
+
+          ## Assets
+          * **castalia-live-desktop-amd64-$ver.iso** — the graphical live
+            desktop (Xorg + Openbox + the 38-app Castalia shell, Human theme).
+          * **castalia-live-amd64-$ver.iso** — the lean bootable base image.
+          * **castalia-desktop_${ver}_amd64.deb** — the desktop as a package
+            for existing Debian-family systems.
+          * **castalia-repo-$ver.tar.gz** — the apt overlay repo.
+          * **SHA256SUMS** — checksums for all of the above (signed when the
+            release key was configured).
+          * **desktop-proof-$ver.png** — the QEMU framebuffer capture from
+            this exact desktop ISO.
+
+          _Assets built from commit $built._
+
+          Castalia OS is an independent project of Tombatossals Softworks and
+          is not affiliated with, endorsed by, or sponsored by Microsoft.
+          EOF
+
+          # Never destroy an existing release — it may already carry assets from
+          # an earlier successful run. Refresh its assets (clobbering same-named
+          # ones) and metadata in place; create only when it does not exist yet.
+          # This is safe to re-run.
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "release $tag exists — refreshing its assets and notes in place"
+            gh release upload "$tag" out/* --clobber
+            gh release edit "$tag" --title "Castalia OS $ver" --notes-file notes.md
+            if [ "$live" = true ]; then
+              # Clear draft AND prerelease in the same edit — GitHub rejects
+              # --latest while the release is still a draft or prerelease
+              # (a hand-created placeholder is often flagged prerelease).
+              gh release edit "$tag" --draft=false --prerelease=false --latest
+            fi
+          elif [ "$live" = true ]; then
+            gh release create "$tag" --verify-tag --latest \
+              --title "Castalia OS $ver" --notes-file notes.md out/*
+          else
+            gh release create "$tag" --verify-tag --draft \
+              --title "Castalia OS $ver" --notes-file notes.md out/*
+          fi
+          echo "release $tag: assets published (live=$live)."

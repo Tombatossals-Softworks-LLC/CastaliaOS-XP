@@ -1,0 +1,5 @@
+add_executable(castalia-adhesivas src/main.cpp)
+target_link_libraries(castalia-adhesivas PRIVATE castalia-ui)
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    target_link_options(castalia-adhesivas PRIVATE -s)
+endif()

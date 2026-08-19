@@ -1,0 +1,16 @@
+Castalia installer — end-to-end QEMU install+boot proof
+=======================================================
+installer/tests/qemu-install.sh: the REAL castalia-install (full run —
+partition, mkfs, copy, UUID fstab, GRUB in chroot, user creation) writes
+a loopback disk from a real bootable Debian source; that disk is then
+booted in QEMU (TCG, IDE) and reaches userspace on its own.
+
+RESULT: PASS — marker: Debian GNU/Linux 12 pc-castalia ttyS0
+
+Serial console (ANSI stripped, key lines in order):
+  GNU GRUB  version 2.06-13+deb12u2      <- bootloader the installer wrote
+  Booting `Debian GNU/Linux'
+  Loading Linux 6.1.0-47-amd64 ...       <- kernel the installer copied
+  Loading initial ramdisk ...
+  Debian GNU/Linux 12 pc-castalia ttyS0  <- reached userspace (UUID root)
+  pc-castalia login:                     <- hostname the installer set
