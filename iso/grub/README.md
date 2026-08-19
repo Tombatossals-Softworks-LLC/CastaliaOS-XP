@@ -28,9 +28,18 @@ the **boot** partition. It would not have booted had it shipped.
 The menu now comes from `grub-mkconfig`, which discovers the real kernel every
 time it runs — so it survives a kernel update, which a hardcoded path does
 not. Castalia's identity is applied through the two supported hooks:
-`/etc/default/grub` (branding, theme, timeout, last-booted memory, and
-`GRUB_DISABLE_OS_PROBER=false` so an existing OS gets its own entry) written by
-`installer/castalia_installer/plan.py`, and the generator above for Safe Mode.
+`/etc/default/grub.d/50-castalia.cfg` (branding, theme, timeout, last-booted
+memory, and `GRUB_DISABLE_OS_PROBER=false` so an existing OS gets its own
+entry) written by `installer/castalia_installer/plan.py`, and the generator
+above for Safe Mode.
+
+A **drop-in**, not `/etc/default/grub` itself: grub-mkconfig sources the main
+file and then every `/etc/default/grub.d/*.cfg`, so Castalia's settings win
+without deleting the ones the image it was installed from had already made.
+The first version wrote the main file, and the install-and-boot test caught it
+taking the source image's serial console with it — a machine that came up and
+could not be heard. `GRUB_CMDLINE_LINUX` is deliberately never set here: it is
+where an image puts `console=`, and it belongs to whoever built that image.
 
 Debian's own "recovery mode" entries are deliberately left enabled under
 *Advanced options*: the Castalia recovery environment (§6.13) does not exist

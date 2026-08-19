@@ -99,19 +99,31 @@ class PlanShape(unittest.TestCase):
         # that is installed once and then just used.
         titles = [s.title for s in self.plan.steps]
         gen = titles.index("Generate GRUB config")
-        for title in ("Write /etc/default/grub (boot identity, §6.2)",
+        for title in ("Write the Castalia GRUB settings (boot identity, §6.2)",
                       "Install the Castalia GRUB theme",
                       "Install the Safe Mode boot entry (§6.2)"):
             self.assertIn(title, titles, title)
             self.assertLess(titles.index(title), gen, title)
 
-    def test_boot_identity_is_written_into_the_target(self):
+    def test_boot_identity_is_a_dropin_and_never_the_main_file(self):
+        # Overwriting /etc/default/grub deletes whatever the image being
+        # installed had configured there. The install-and-boot test found this
+        # the hard way: the source image's serial console went with it, and a
+        # machine that boots but cannot be heard is indistinguishable from one
+        # that does not boot. grub-mkconfig sources the drop-ins afterwards,
+        # so Castalia still wins every key it names.
         step = next(s for s in self.plan.steps
-                    if s.title.startswith("Write /etc/default/grub"))
+                    if s.title.startswith("Write the Castalia GRUB settings"))
         self.assertIsNotNone(step.write)
         path, render = step.write
-        self.assertEqual(path, "/target/etc/default/grub")
-        self.assertIn('GRUB_DISTRIBUTOR="Castalia OS"', render({}))
+        self.assertEqual(path, "/target/etc/default/grub.d/50-castalia.cfg")
+        self.assertNotIn(("/target/etc/default/grub", None),
+                         [(s.write[0], None) for s in self.plan.steps
+                          if s.write is not None])
+        body = render({})
+        self.assertIn('GRUB_DISTRIBUTOR="Castalia OS"', body)
+        # GRUB_CMDLINE_LINUX is where an image puts console=; not ours to set.
+        self.assertNotIn("GRUB_CMDLINE_LINUX=", body)
 
     def test_boot_asset_steps_are_fail_open(self):
         # A missing theme is a plain-looking menu. It must never be a failed

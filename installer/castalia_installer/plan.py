@@ -24,6 +24,10 @@ from .model import (
 # packages/mkdeb.sh and by the desktop ISO hook (see iso/grub/README.md).
 GRUB_ASSETS = "/usr/share/castalia/grub"
 
+#: Castalia's GRUB settings go in a drop-in that grub-mkconfig sources after
+#: /etc/default/grub, so they win without erasing the source image's own.
+GRUB_DROPIN = "/etc/default/grub.d/50-castalia.cfg"
+
 #: Copy the gfxmenu theme into /boot and bake the .pf2 fonts it names. Every
 #: line is fail-open and the script always exits 0 — see the call site.
 GRUB_THEME_SH = f"""set -u
@@ -131,16 +135,28 @@ def render_fstab(ctx: dict) -> str:
 
 
 def render_default_grub(ctx: dict) -> str:
-    """Produce /etc/default/grub — the installed system's boot identity (§6.2).
+    """Produce /etc/default/grub.d/50-castalia.cfg — the boot identity (§6.2).
 
     These are the knobs ``grub-mkconfig`` reads, and its output is the only
     menu an installed machine ever sees. Setting them here, rather than
     shipping a hand-written ``grub.cfg``, is what makes the menu survive a
     kernel update: the entries are regenerated against whatever kernel is
     actually on /boot, instead of pointing at a path that used to exist.
+
+    A DROP-IN, not ``/etc/default/grub`` itself. grub-mkconfig sources the
+    main file and then every ``/etc/default/grub.d/*.cfg``, so Castalia's
+    settings win without deleting the ones the image it was installed from
+    had already made. That is not a detail: the first version of this wrote
+    the main file, and the install-and-boot test caught it wiping the serial
+    console the source image had configured — the machine came up and could
+    not be heard. Anything Castalia does not name here is left alone, and
+    **GRUB_CMDLINE_LINUX is deliberately not named**: it is where an image
+    puts ``console=``, and it belongs to whoever built that image.
     """
     return "\n".join([
-        "# Castalia OS — GRUB defaults (Bible §6.2).",
+        "# Castalia OS — GRUB settings (Bible §6.2).",
+        "# A drop-in: grub-mkconfig sources /etc/default/grub first and then",
+        "# this, so these win while everything else in that file survives.",
         "# Written by the installer; update-grub re-reads it on every kernel",
         "# update. Edit and re-run update-grub to change the menu.",
         "",
@@ -152,7 +168,6 @@ def render_default_grub(ctx: dict) -> str:
         "",
         'GRUB_DISTRIBUTOR="Castalia OS"',
         'GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"',
-        'GRUB_CMDLINE_LINUX=""',
         "",
         "# The gfxmenu theme (iso/grub/theme). GRUB ignores GRUB_THEME when the",
         "# file is not there, so a build without the theme still boots plainly.",
@@ -264,8 +279,8 @@ def build_plan(
                destructive=True, chroot=True))
         # Castalia's boot identity, applied through the hooks grub-mkconfig
         # actually reads. All of it has to land BEFORE the menu is generated.
-        s(Step("Write /etc/default/grub (boot identity, §6.2)",
-               write=(f"{mnt}/etc/default/grub", render_default_grub)))
+        s(Step("Write the Castalia GRUB settings (boot identity, §6.2)",
+               write=(f"{mnt}{GRUB_DROPIN}", render_default_grub)))
         # The theme and the Safe Mode generator travel with the system — the
         # .deb and the ISO hook both stage them into /usr/share/castalia/grub
         # — so this only has to move them into place. Neither is needed to

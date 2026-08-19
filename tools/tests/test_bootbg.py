@@ -87,6 +87,8 @@ class BootMenuConfigTest(unittest.TestCase):
         from castalia_installer import plan  # noqa: PLC0415
 
         cfg = plan.render_default_grub({})
+        self.assertEqual(plan.GRUB_DROPIN,
+                         "/etc/default/grub.d/50-castalia.cfg")
         for needle in ('GRUB_DISTRIBUTOR="Castalia OS"',   # branding
                        "GRUB_TIMEOUT=4",                   # §6.2 short
                        "GRUB_DEFAULT=saved",               # §6.2 remembered

@@ -6,7 +6,9 @@
 # fstab → GRUB in the chroot → user) against a loopback disk, using a real
 # bootable Debian as the source, then boots the RESULTING disk in QEMU and
 # asserts it reaches userspace on its own — from GRUB the installer wrote, the
-# kernel it copied, and the fstab it generated.
+# kernel it copied, and the fstab it generated. In between it reads the menu
+# grub-mkconfig produced, so the Castalia entries (§6.2) are proven to exist
+# rather than assumed from the fact that something booted.
 #
 # Needs root + debootstrap + qemu-system-x86_64 + parted/mkfs/rsync/grub tools.
 # The debootstrapped source is cached (SRC_CACHE) so re-runs are fast.
@@ -67,6 +69,21 @@ else
     echo "qemu-install: reusing cached source at $SRC_CACHE"
 fi
 
+# ---- 1b. Castalia's boot assets, where the installer expects them -----------
+# A bare debootstrap has no /usr/share/castalia, so without this the GRUB
+# theme and Safe Mode steps would find nothing, no-op, and this test would
+# prove only that the *rest* of the install still boots. Stage them at the
+# same path packages/mkdeb.sh and the ISO hook use, and the generator below
+# runs inside the real grub-mkconfig on a real install.
+echo "qemu-install: staging the Castalia boot assets into the source"
+REPO_ROOT=$(cd "$HERE/.." && pwd)
+install -Dm644 "$REPO_ROOT/iso/grub/theme/theme.txt" \
+    "$SRC_CACHE/usr/share/castalia/grub/theme/theme.txt"
+install -Dm644 "$REPO_ROOT/iso/boot-bg/splash.png" \
+    "$SRC_CACHE/usr/share/castalia/grub/theme/splash.png"
+install -Dm755 "$REPO_ROOT/iso/grub/11_castalia_safe" \
+    "$SRC_CACHE/usr/share/castalia/grub/11_castalia_safe"
+
 # ---- 2. a blank target disk -------------------------------------------------
 echo "qemu-install: creating an 8.6 GiB target disk image"
 truncate -s 8600M "$IMG"
@@ -81,6 +98,32 @@ printf 'castalia\n' | PYTHONPATH="$HERE" python3 -m castalia_installer \
     --hostname pc-castalia --user dave --ram-mib 1024 \
     --password-stdin --confirm-erase "$LOOP"
 
+sync
+
+# ---- 3b. what grub-mkconfig actually wrote ----------------------------------
+# The installer only supplies inputs (/etc/default/grub.d/50-castalia.cfg and
+# /etc/grub.d/11_castalia_safe); grub-mkconfig decides what the menu says. The
+# menu is worth reading before the disk is booted, because a Safe Mode entry
+# that silently stopped being generated looks exactly like a healthy install.
+echo "qemu-install: inspecting the generated boot menu"
+mount "${LOOP}p3" "$MNT"
+mount "${LOOP}p1" "$MNT/boot"
+GRUB_CFG="$MNT/boot/grub/grub.cfg"
+[ -s "$GRUB_CFG" ] || { echo "qemu-install: FAIL — no grub.cfg on the target" >&2
+                        exit 1; }
+for needle in "Castalia OS" "--id castalia-safe" "castalia.safemode=1"; do
+    grep -q -- "$needle" "$GRUB_CFG" || {
+        echo "qemu-install: FAIL — generated menu is missing: $needle" >&2
+        grep -c menuentry "$GRUB_CFG" >&2 || :
+        exit 1; }
+done
+# The drop-in must not have cost the source image its own settings — this is
+# the regression that once made an installed machine boot silently.
+grep -q "console=ttyS0" "$GRUB_CFG" || {
+    echo "qemu-install: FAIL — the source image's kernel cmdline was lost" >&2
+    exit 1; }
+echo "qemu-install: menu OK — Castalia entries present, source settings kept"
+umount -lf "$MNT/boot"; umount -lf "$MNT"
 sync
 losetup -d "$LOOP"; LOOP=""
 
