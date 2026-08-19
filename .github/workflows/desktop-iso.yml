@@ -17,15 +17,14 @@ jobs:
   desktop-iso:
     name: Build + boot the graphical desktop ISO
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 150
     steps:
       - name: Check out
         uses: actions/checkout@v7
 
       - name: Install ISO + boot toolchain
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          sh ci/apt-install.sh \
             debootstrap squashfs-tools xorriso isolinux syslinux-common \
             qemu-system-x86 python3
 

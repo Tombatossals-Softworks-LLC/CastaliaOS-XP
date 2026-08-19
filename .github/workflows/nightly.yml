@@ -28,15 +28,14 @@ jobs:
   iso-live:
     name: live-amd64 ISO — build + FLOOR boot (Bible §18 P1, §19.1)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     steps:
       - name: Check out
         uses: actions/checkout@v7
 
       - name: Install ISO + boot toolchain
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          sh ci/apt-install.sh \
             debootstrap squashfs-tools xorriso isolinux syslinux-common \
             qemu-system-x86 python3
 
@@ -58,15 +57,14 @@ jobs:
   iso-desktop:
     name: live-desktop-amd64 ISO — build + desktop proof (Bible §18 P2)
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 150
     steps:
       - name: Check out
         uses: actions/checkout@v7
 
       - name: Install ISO + boot toolchain
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          sh ci/apt-install.sh \
             debootstrap squashfs-tools xorriso isolinux syslinux-common \
             qemu-system-x86 python3
 
@@ -97,15 +95,14 @@ jobs:
   installer-endtoend:
     name: Installer — install to disk + boot the result (Bible §14)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     steps:
       - name: Check out
         uses: actions/checkout@v7
 
       - name: Install install + boot toolchain
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          sh ci/apt-install.sh \
             debootstrap parted e2fsprogs rsync util-linux \
             qemu-system-x86 python3
 
@@ -117,17 +114,16 @@ jobs:
   dist:
     name: Distribution — nightly .deb + apt overlay repo (Bible §13, §17.2)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Check out
         uses: actions/checkout@v7
 
       - name: Install Qt5 + packaging toolchain
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            qtbase5-dev libqt5svg5-dev libxcb1-dev cmake g++ fonts-dejavu-core \
-            dpkg-dev qttools5-dev-tools
+          sh ci/apt-install.sh \
+            qtbase5-dev libqt5svg5-dev libxcb1-dev cmake g++ \
+            fonts-dejavu-core dpkg-dev qttools5-dev-tools
 
       - name: Build shell + .deb + repo (nightly-stamped version)
         run: |

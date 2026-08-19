@@ -36,6 +36,15 @@ concurrency:
 permissions:
   contents: read
 
+# On job timeouts: the protection that matters against a hung QEMU is inside
+# the test scripts themselves (boot-smoke.sh runs under `timeout 300`,
+# qemu-install.sh polls its own budget), so the job-level timeout is only a
+# backstop for a hang OUTSIDE them — in practice, the runner's apt mirror.
+# They are sized for a runner having a bad day rather than a healthy one: a
+# 15-second job failing at 20 minutes says nothing about the code, and a red
+# light that says nothing is a red light people learn to ignore. Installs go
+# through ci/apt-install.sh, which bounds and retries them.
+
 jobs:
   qa:
     name: Lint, tests, design-system & legal gates
@@ -103,16 +112,16 @@ jobs:
   panel-poc:
     name: Qt panel PoC (build + offscreen render, Bible §18 Phase 0)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Check out
         uses: actions/checkout@v7
 
       - name: Install Qt5 + tooling
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            qtbase5-dev libqt5svg5-dev libxcb1-dev cmake g++ fonts-dejavu-core
+          sh ci/apt-install.sh \
+            qtbase5-dev libqt5svg5-dev libxcb1-dev cmake g++ \
+            fonts-dejavu-core
 
       - name: Generate QSS from tokens
         run: PYTHONPATH=tools python3 tools/theme_export.py
@@ -174,17 +183,16 @@ jobs:
   e2e:
     name: E2E — live desktop, full app suite & session (Bible §7, §9, §19)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Check out
         uses: actions/checkout@v7
 
       - name: Install Qt5, Xorg, Openbox & capture tooling
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            qtbase5-dev libqt5svg5-dev libxcb1-dev cmake g++ fonts-dejavu-core \
-            xvfb openbox x11-utils imagemagick
+          sh ci/apt-install.sh \
+            qtbase5-dev libqt5svg5-dev libxcb1-dev cmake g++ \
+            fonts-dejavu-core xvfb openbox x11-utils imagemagick
 
       - name: Generate QSS from tokens
         run: PYTHONPATH=tools python3 tools/theme_export.py
@@ -221,17 +229,17 @@ jobs:
   package:
     name: Distribution — .deb build, install, run & apt repo (Bible §13, §17.2)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Check out
         uses: actions/checkout@v7
 
       - name: Install Qt5 + packaging toolchain
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            qtbase5-dev libqt5svg5-dev libxcb1-dev cmake g++ fonts-dejavu-core \
-            dpkg-dev imagemagick librsvg2-bin qttools5-dev-tools
+          sh ci/apt-install.sh \
+            qtbase5-dev libqt5svg5-dev libxcb1-dev cmake g++ \
+            fonts-dejavu-core dpkg-dev imagemagick librsvg2-bin \
+            qttools5-dev-tools
 
       - name: Generate QSS from tokens
         run: PYTHONPATH=tools python3 tools/theme_export.py
@@ -284,15 +292,14 @@ jobs:
   installer-loopback:
     name: Installer engine on a real disk (loopback, Bible §14)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
       - name: Check out
         uses: actions/checkout@v7
 
       - name: Install disk tooling
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          sh ci/apt-install.sh \
             parted e2fsprogs rsync util-linux python3
 
       - name: Real install to a loopback disk image
@@ -303,15 +310,14 @@ jobs:
   iso-boot:
     name: Live ISO build + QEMU boot (Bible §18 Phase 1, §19.1)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     steps:
       - name: Check out
         uses: actions/checkout@v7
 
       - name: Install ISO + boot toolchain
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          sh ci/apt-install.sh \
             debootstrap squashfs-tools xorriso isolinux syslinux-common \
             qemu-system-x86 python3
 
@@ -329,15 +335,14 @@ jobs:
   installer-endtoend:
     name: Installer end-to-end (install to disk + QEMU boot, Bible §14)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     steps:
       - name: Check out
         uses: actions/checkout@v7
 
       - name: Install install + boot toolchain
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          sh ci/apt-install.sh \
             debootstrap parted e2fsprogs rsync util-linux \
             qemu-system-x86 python3
 

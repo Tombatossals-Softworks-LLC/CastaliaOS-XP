@@ -47,7 +47,7 @@ jobs:
   gates:
     name: Full QA gate (lint, unit, design/legal gates, build, render, E2E)
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     steps:
       - name: Check out
         uses: actions/checkout@v7
@@ -68,10 +68,10 @@ jobs:
       - name: Install the full QA toolchain
         run: |
           pip install ruff==0.15.8  # pinned; rule selection pinned in ruff.toml
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            qtbase5-dev libqt5svg5-dev libxcb1-dev cmake g++ fonts-dejavu-core \
-            xvfb openbox x11-utils imagemagick dpkg-dev
+          sh ci/apt-install.sh \
+            qtbase5-dev libqt5svg5-dev libxcb1-dev cmake g++ \
+            fonts-dejavu-core xvfb openbox x11-utils imagemagick \
+            dpkg-dev
 
       - name: tests/run.sh full — the whole per-commit surface in one gate
         run: sh tests/run.sh full
@@ -80,17 +80,16 @@ jobs:
     name: Package — .deb + apt overlay repo
     needs: gates
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - name: Check out
         uses: actions/checkout@v7
 
       - name: Install Qt5 + packaging toolchain
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            qtbase5-dev libqt5svg5-dev libxcb1-dev cmake g++ fonts-dejavu-core \
-            dpkg-dev qttools5-dev-tools
+          sh ci/apt-install.sh \
+            qtbase5-dev libqt5svg5-dev libxcb1-dev cmake g++ \
+            fonts-dejavu-core dpkg-dev qttools5-dev-tools
 
       - name: Build shell + .deb
         # i18n_build.py release is not optional: mkdeb refuses to ship a
@@ -146,15 +145,14 @@ jobs:
     name: ISO — live-amd64 (built + FLOOR boot-verified)
     needs: gates
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 90
     steps:
       - name: Check out
         uses: actions/checkout@v7
 
       - name: Install ISO + boot toolchain
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          sh ci/apt-install.sh \
             debootstrap squashfs-tools xorriso isolinux syslinux-common \
             qemu-system-x86 python3
 
@@ -176,15 +174,14 @@ jobs:
     name: ISO — live-desktop-amd64 (built + desktop framebuffer-verified)
     needs: gates
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 150
     steps:
       - name: Check out
         uses: actions/checkout@v7
 
       - name: Install ISO + boot toolchain
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          sh ci/apt-install.sh \
             debootstrap squashfs-tools xorriso isolinux syslinux-common \
             qemu-system-x86 python3
 
@@ -216,7 +213,7 @@ jobs:
     needs: [package, iso-live, iso-desktop]
     if: github.ref_type == 'tag' || (github.event_name == 'workflow_dispatch' && inputs.publish)
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     permissions:
       contents: write
     steps:
