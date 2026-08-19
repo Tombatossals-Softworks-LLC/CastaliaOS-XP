@@ -20,6 +20,34 @@ from .model import (
     partition_path,
 )
 
+# Where a Castalia system keeps its boot assets, staged there by
+# packages/mkdeb.sh and by the desktop ISO hook (see iso/grub/README.md).
+GRUB_ASSETS = "/usr/share/castalia/grub"
+
+#: Copy the gfxmenu theme into /boot and bake the .pf2 fonts it names. Every
+#: line is fail-open and the script always exits 0 — see the call site.
+GRUB_THEME_SH = f"""set -u
+src={GRUB_ASSETS}/theme
+dst=/boot/grub/themes/castalia
+[ -d "$src" ] || exit 0
+mkdir -p "$dst" || exit 0
+cp -a "$src/." "$dst/" 2>/dev/null || exit 0
+command -v grub-mkfont >/dev/null 2>&1 || exit 0
+ttf=/usr/share/fonts/truetype/dejavu
+grub-mkfont -s 14 -o "$dst/dejavu_14.pf2"  "$ttf/DejaVuSans.ttf"      2>/dev/null || :
+grub-mkfont -s 12 -o "$dst/dejavu_12.pf2"  "$ttf/DejaVuSans.ttf"      2>/dev/null || :
+grub-mkfont -s 20 -o "$dst/dejavu_20b.pf2" "$ttf/DejaVuSans-Bold.ttf" 2>/dev/null || :
+exit 0
+"""
+
+#: Put the Safe Mode generator where grub-mkconfig will run it.
+GRUB_SAFE_ENTRY_SH = f"""set -u
+src={GRUB_ASSETS}/11_castalia_safe
+[ -f "$src" ] || exit 0
+install -Dm755 "$src" /etc/grub.d/11_castalia_safe 2>/dev/null || :
+exit 0
+"""
+
 # Directories never copied from the live root onto the target.
 COPY_EXCLUDES = (
     "/dev/*", "/proc/*", "/sys/*", "/run/*", "/tmp/*", "/mnt/*", "/media/*",
@@ -100,6 +128,44 @@ def render_fstab(ctx: dict) -> str:
         f"UUID={u['swap']}  none   swap  sw                 0  0",
     ]
     return "\n".join(lines) + "\n"
+
+
+def render_default_grub(ctx: dict) -> str:
+    """Produce /etc/default/grub — the installed system's boot identity (§6.2).
+
+    These are the knobs ``grub-mkconfig`` reads, and its output is the only
+    menu an installed machine ever sees. Setting them here, rather than
+    shipping a hand-written ``grub.cfg``, is what makes the menu survive a
+    kernel update: the entries are regenerated against whatever kernel is
+    actually on /boot, instead of pointing at a path that used to exist.
+    """
+    return "\n".join([
+        "# Castalia OS — GRUB defaults (Bible §6.2).",
+        "# Written by the installer; update-grub re-reads it on every kernel",
+        "# update. Edit and re-run update-grub to change the menu.",
+        "",
+        "# §6.2: short timeout, last-booted remembered.",
+        "GRUB_DEFAULT=saved",
+        "GRUB_SAVEDEFAULT=true",
+        "GRUB_TIMEOUT=4",
+        "GRUB_TIMEOUT_STYLE=menu",
+        "",
+        'GRUB_DISTRIBUTOR="Castalia OS"',
+        'GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"',
+        'GRUB_CMDLINE_LINUX=""',
+        "",
+        "# The gfxmenu theme (iso/grub/theme). GRUB ignores GRUB_THEME when the",
+        "# file is not there, so a build without the theme still boots plainly.",
+        "GRUB_GFXMODE=1024x768,800x600,640x480,auto",
+        "GRUB_GFXPAYLOAD_LINUX=keep",
+        "GRUB_THEME=/boot/grub/themes/castalia/theme.txt",
+        "",
+        "# §14.3: an OS that was already on this machine gets its own entry.",
+        "# This is the boot-menu half of dual-boot; guided install is still",
+        "# whole-disk only, so it cannot yet install *alongside* one.",
+        "GRUB_DISABLE_OS_PROBER=false",
+        "",
+    ])
 
 
 def render_hostname(ctx: dict) -> str:
@@ -196,6 +262,19 @@ def build_plan(
         s(Step("Install GRUB to the disk",
                ["grub-install", "--target=i386-pc", "--recheck", disk],
                destructive=True, chroot=True))
+        # Castalia's boot identity, applied through the hooks grub-mkconfig
+        # actually reads. All of it has to land BEFORE the menu is generated.
+        s(Step("Write /etc/default/grub (boot identity, §6.2)",
+               write=(f"{mnt}/etc/default/grub", render_default_grub)))
+        # The theme and the Safe Mode generator travel with the system — the
+        # .deb and the ISO hook both stage them into /usr/share/castalia/grub
+        # — so this only has to move them into place. Neither is needed to
+        # boot, and both are fail-open: a missing theme must never turn a
+        # successful install into a failed one.
+        s(Step("Install the Castalia GRUB theme",
+               ["sh", "-c", GRUB_THEME_SH], chroot=True))
+        s(Step("Install the Safe Mode boot entry (§6.2)",
+               ["sh", "-c", GRUB_SAFE_ENTRY_SH], chroot=True))
         s(Step("Generate GRUB config",
                ["grub-mkconfig", "-o", "/boot/grub/grub.cfg"], chroot=True))
         # Make the installed system boot by root FS UUID, not the install-time

@@ -92,6 +92,41 @@ class PlanShape(unittest.TestCase):
         self.assertTrue(step.chroot)
         self.assertIn("grub.cfg", " ".join(step.argv))
 
+    def test_boot_identity_lands_before_the_menu_is_generated(self):
+        # /etc/default/grub, the theme and the Safe Mode generator are inputs
+        # to grub-mkconfig. Any of them written afterwards is a file that only
+        # takes effect on the *next* update-grub — i.e. never, for a machine
+        # that is installed once and then just used.
+        titles = [s.title for s in self.plan.steps]
+        gen = titles.index("Generate GRUB config")
+        for title in ("Write /etc/default/grub (boot identity, §6.2)",
+                      "Install the Castalia GRUB theme",
+                      "Install the Safe Mode boot entry (§6.2)"):
+            self.assertIn(title, titles, title)
+            self.assertLess(titles.index(title), gen, title)
+
+    def test_boot_identity_is_written_into_the_target(self):
+        step = next(s for s in self.plan.steps
+                    if s.title.startswith("Write /etc/default/grub"))
+        self.assertIsNotNone(step.write)
+        path, render = step.write
+        self.assertEqual(path, "/target/etc/default/grub")
+        self.assertIn('GRUB_DISTRIBUTOR="Castalia OS"', render({}))
+
+    def test_boot_asset_steps_are_fail_open(self):
+        # A missing theme is a plain-looking menu. It must never be a failed
+        # install, so both scripts end in an unconditional exit 0 and run in
+        # the chroot, where /usr/share/castalia is the target's copy.
+        for title in ("Install the Castalia GRUB theme",
+                      "Install the Safe Mode boot entry (§6.2)"):
+            step = next(s for s in self.plan.steps if s.title == title)
+            self.assertTrue(step.chroot, title)
+            self.assertFalse(step.destructive, title)
+            script = step.argv[-1]
+            self.assertEqual(step.argv[:2], ["sh", "-c"], title)
+            self.assertTrue(script.rstrip().endswith("exit 0"), title)
+            self.assertIn("/usr/share/castalia/grub", script, title)
+
     def test_creates_the_user_in_chroot(self):
         useradd = [s for s in self.plan.steps
                    if s.argv and s.argv[0] == "useradd"]

@@ -10,7 +10,10 @@
 #   3. the CASTALIA_DEMO welcome window opens (the live first impression),
 #   4. SUPERVISION: killing the panel process gets it restarted ~1 s later
 #      (a crash never blacks out the desktop), and
-#   5. SIGTERM ends the session script itself (clean logout).
+#   5. SIGTERM ends the session script itself (clean logout), and
+#   6. SAFE MODE: relaunched with castalia.safemode=1's effect, the session
+#      hands its children reduced-motion/silent/high-contrast and leaves the
+#      optional services unstarted (§6.2).
 #
 # Usage:
 #   sh tests/e2e/session-smoke.sh [--bindir DIR] [--repo PATH] [--display :N]
@@ -40,7 +43,8 @@ for tool in Xvfb openbox xprop; do
         echo "session-smoke: missing required tool: $tool" >&2; exit 2; }
 done
 for b in panel/castalia-panel desktop/castalia-desktop \
-         apps/welcome/castalia-bienvenida; do
+         apps/welcome/castalia-bienvenida \
+         apps/notificaciones/castalia-notificaciones; do
     [ -x "$BINDIR/$b" ] || {
         echo "session-smoke: missing binary: $BINDIR/$b (build the shell)" >&2
         exit 2; }
@@ -67,6 +71,8 @@ cp "$BINDIR/panel/castalia-panel"            "$PREFIX_DIR/bin/castalia-panel"
 cp "$BINDIR/desktop/castalia-desktop"        "$PREFIX_DIR/bin/castalia-desktop"
 cp "$BINDIR/apps/welcome/castalia-bienvenida" \
    "$PREFIX_DIR/bin/castalia-bienvenida"
+cp "$BINDIR/apps/notificaciones/castalia-notificaciones" \
+   "$PREFIX_DIR/bin/castalia-notificaciones"
 
 # Simulate the INSTALLED greeter path (Exec=castalia-session from an
 # xsession), NOT the live path: a display manager launches the session with
@@ -188,5 +194,56 @@ kill -0 "$SESSION" 2>/dev/null && {
 SESSION=
 echo "session-smoke: session exited on SIGTERM (clean logout)"
 
-echo "session-smoke: PASS — boot, shell, demo, supervision and logout all live"
+# ---------------------------------------------------------------- 6. safe --
+# The GRUB "Modo seguro" entry (iso/grub/11_castalia_safe) boots with
+# castalia.safemode=1, which castalia-session turns into a stripped session.
+# Assert it from OUTSIDE the script — the log it prints, and the environment
+# its children actually inherit — because the whole point of Safe Mode is what
+# the processes end up doing, not what the script says it will do.
+echo "session-smoke: restarting the session in SAFE MODE"
+pkill -f "$PREFIX_DIR/bin/" 2>/dev/null || :
+pkill -f "openbox.*$DISP" 2>/dev/null || :
+sleep 1
+CASTALIA_SAFE_MODE=1 sh "$REPO/shell/session/castalia-session" \
+    >"$HOME_DIR/safe.log" 2>&1 &
+SESSION=$!
+
+i=0
+safe_pid=
+while [ $i -lt 100 ]; do
+    safe_pid=$(pgrep -f "$PREFIX_DIR/bin/castalia-panel" | head -n 1)
+    [ -n "$safe_pid" ] && break
+    sleep 0.2; i=$((i + 1))
+done
+[ -n "$safe_pid" ] || { echo "session-smoke: FAIL — no panel in safe mode" >&2
+                        tail -20 "$HOME_DIR/safe.log" >&2; exit 1; }
+
+safe_env=$(tr '\0' '\n' < "/proc/$safe_pid/environ" 2>/dev/null)
+for var in CASTALIA_SAFE_MODE=1 CASTALIA_REDUCE_MOTION=1 CASTALIA_NO_SOUND=1 \
+           CASTALIA_THEME=high-contrast; do
+    printf '%s\n' "$safe_env" | grep -qx "$var" || {
+        echo "session-smoke: FAIL — safe mode did not export $var to the shell" >&2
+        tail -20 "$HOME_DIR/safe.log" >&2; exit 1; }
+done
+echo "session-smoke: safe mode exported reduced-motion, silent, high-contrast"
+
+# §6.2 "minimal services": the notification server is staged in $PREFIX/bin and
+# is started on a normal boot, so its absence here is a decision, not a gap.
+sleep 2
+if pgrep -f "$PREFIX_DIR/bin/castalia-notificaciones" >/dev/null 2>&1; then
+    echo "session-smoke: FAIL — safe mode started the notification server" >&2
+    exit 1
+fi
+echo "session-smoke: safe mode left the optional services alone"
+
+kill -TERM "$SESSION"
+i=0
+while kill -0 "$SESSION" 2>/dev/null && [ $i -lt 75 ]; do
+    sleep 0.2; i=$((i + 1))
+done
+kill -0 "$SESSION" 2>/dev/null && {
+    echo "session-smoke: FAIL — safe-mode session ignored SIGTERM" >&2; exit 1; }
+SESSION=
+
+echo "session-smoke: PASS — boot, shell, demo, supervision, safe mode, logout"
 exit 0

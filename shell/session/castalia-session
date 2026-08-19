@@ -30,6 +30,31 @@ mkdir -p "$RUNTIME"
 
 log() { printf 'castalia-session: %s\n' "$*" >&2; }
 
+# ------------------------------------------------------------ safe mode --
+# The GRUB "Modo seguro" entry (iso/grub/11_castalia_safe) boots with
+# castalia.safemode=1 on the kernel command line. It is read here — the same
+# way the live image reads castalia.installer= — because a boot entry that
+# nothing acts on is just a differently-worded normal boot.
+#
+# Safe Mode is for the machine you cannot get a desktop out of: strip the
+# session down to what is needed to see a window and fix something, and leave
+# the rest off. CASTALIA_SAFE_MODE=1 forces it without rebooting, which is how
+# the tests exercise it.
+SAFE_MODE="${CASTALIA_SAFE_MODE:-0}"
+if [ "$SAFE_MODE" != "1" ] &&
+   grep -qw 'castalia.safemode=1' /proc/cmdline 2>/dev/null; then
+    SAFE_MODE=1
+fi
+if [ "$SAFE_MODE" = "1" ]; then
+    export CASTALIA_SAFE_MODE=1
+    # No animation anywhere (Theme.cpp reads this), and no audio: on a machine
+    # that boots to a black screen the sound stack is a suspect too, and a
+    # blocking player would take the session down with it.
+    export CASTALIA_REDUCE_MOTION=1
+    export CASTALIA_NO_SOUND=1
+    log "SAFE MODE: animations and sounds off, optional services not started"
+fi
+
 # ---------------------------------------------------------------- theme --
 # The active theme id comes from the user's config (falls back to the
 # system default, then to classic). One switch themes everything (§6.16).
@@ -39,6 +64,13 @@ theme_from() {
 THEME="$(theme_from "$HOME/.config/castalia/theme.conf")"
 [ -n "${THEME:-}" ] || THEME="$(theme_from /etc/castalia/theme.conf)"
 [ -n "${THEME:-}" ] || THEME="classic"
+# In Safe Mode the user's theme is not honoured: High Contrast is the one that
+# stays readable on a generic framebuffer at whatever resolution nomodeset
+# gives us, and it is the cheapest to paint.
+if [ "$SAFE_MODE" = "1" ] && [ "$THEME" != "high-contrast" ]; then
+    log "safe mode: overriding theme $THEME -> high-contrast"
+    THEME="high-contrast"
+fi
 export CASTALIA_THEME="$THEME"
 log "theme: $THEME"
 
@@ -154,7 +186,8 @@ fi
 # The notification server (§7.4). It owns org.freedesktop.Notifications, so
 # anything on the system — an apt hook, a first-party app, notify-send — can
 # reach the user. Started after the panel so its toasts can measure the strut.
-if [ -x "$PREFIX/bin/castalia-notificaciones" ]; then
+if [ "$SAFE_MODE" != "1" ] &&
+   [ -x "$PREFIX/bin/castalia-notificaciones" ]; then
     supervise notificaciones "$PREFIX/bin/castalia-notificaciones" \
         --theme "$THEME" --repo "$REPO"
 fi

@@ -1,0 +1,84 @@
+#!/bin/sh
+# Castalia OS — the Safe Mode boot entry (Bible §6.2), as a grub.d generator.
+#
+# grub-mkconfig runs every executable in /etc/grub.d in order and concatenates
+# their stdout into /boot/grub/grub.cfg. By the time this runs, 10_linux has
+# already emitted the normal entries; we add one more — the same kernel with
+# the graphics stack, the extra cores and the compositor taken away, plus
+# `castalia.safemode=1` for castalia-session to read out of /proc/cmdline.
+#
+# Why a generator and not a static menu: the kernel version changes on every
+# update, and a hand-written entry pointing at a path that no longer exists is
+# a machine that does not boot. This asks GRUB's own tooling where the kernel
+# is, every time the menu is regenerated.
+#
+# ---------------------------------------------------------------------------
+# This file must never be able to break a boot. Two rules give it that:
+#
+#   1. ALL the work happens in a subshell. grub-mkconfig runs under `set -e`
+#      and aborts the whole menu if a generator exits non-zero, and sourcing
+#      grub-mkconfig_lib is not safe in this shell — the library reads
+#      variables that only grub-mkconfig exports, so under `set -u` it kills
+#      its caller outright. Inside a subshell, any failure of any kind — a
+#      missing library, a hard `exit`, an unset variable — is contained, and
+#      the parent turns it into a silent, successful "no entry".
+#   2. NOTHING is printed until the entry is complete and checked. A truncated
+#      `menuentry {` is an unparseable grub.cfg, which is a machine that does
+#      not come up at all.
+#
+# The two CASTALIA_GRUB_* variables below default to the production paths and
+# exist so the one file here that can make a machine unbootable is exercised
+# for real in CI — with a stub library and a fake /boot — rather than trusted
+# because it reads correctly. Nothing in a booting system sets them.
+# ---------------------------------------------------------------------------
+
+BOOTDIR=${CASTALIA_GRUB_BOOTDIR:-/boot}
+LIB=${CASTALIA_GRUB_MKCONFIG_LIB:-/usr/share/grub/grub-mkconfig_lib}
+
+entry=$(
+    # shellcheck source=/dev/null
+    . "$LIB" || exit 1
+
+    probe=${grub_probe:-grub-probe}
+
+    # The newest kernel present, by version order — not glob order, where
+    # vmlinuz-6.1.0-10 sorts before vmlinuz-6.1.0-9.
+    kernel=$(ls -1 "$BOOTDIR"/vmlinuz-* 2>/dev/null | LC_ALL=C sort -V \
+             | tail -n 1)
+    [ -n "$kernel" ] && [ -r "$kernel" ] || exit 1
+    initrd="$BOOTDIR/initrd.img-${kernel##*/vmlinuz-}"
+    # No initrd means an entry that would not boot. Offer nothing instead.
+    [ -r "$initrd" ] || exit 1
+
+    # What the kernel must be told its root is, and where GRUB has to look for
+    # the kernel — not the same filesystem when /boot is its own partition,
+    # which is exactly the layout the installer creates (§14.3).
+    root_uuid=$("$probe" --target=fs_uuid / 2>/dev/null) || exit 1
+    [ -n "$root_uuid" ] || exit 1
+    boot_device=$("$probe" --target=device "$kernel" 2>/dev/null) || exit 1
+    [ -n "$boot_device" ] || exit 1
+
+    prepare=$(prepare_grub_to_access_device "$boot_device" 2>/dev/null \
+              | sed -e 's/^/    /') || exit 1
+    kernel_path=$(make_system_path_relative_to_its_root "$kernel" \
+                  2>/dev/null) || exit 1
+    initrd_path=$(make_system_path_relative_to_its_root "$initrd" \
+                  2>/dev/null) || exit 1
+    [ -n "$kernel_path" ] && [ -n "$initrd_path" ] || exit 1
+
+    # §6.2: no compositor, generic video, single core.
+    cat <<EOF
+menuentry "${GRUB_DISTRIBUTOR:-Castalia OS} — Modo seguro (Safe Mode)" --id castalia-safe {
+$prepare
+    linux $kernel_path root=UUID=$root_uuid ro nomodeset maxcpus=1 castalia.safemode=1
+    initrd $initrd_path
+}
+EOF
+) 2>/dev/null || exit 0
+
+# Only now, and only if it is whole.
+case "$entry" in
+    "menuentry "*" --id castalia-safe {"*"    linux "*" castalia.safemode=1"*"    initrd "*"}")
+        printf '%s\n' "$entry" ;;
+    *)  exit 0 ;;
+esac

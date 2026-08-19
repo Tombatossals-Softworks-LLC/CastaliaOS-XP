@@ -157,6 +157,18 @@ python3 tools/i18n_build.py release"
     install -Dm644 "$qm" "$STAGE$SHARE/i18n/castalia_$lang.qm"
 done
 
+# The installed system's boot identity (Bible §6.2, iso/grub/README.md): the
+# gfxmenu theme with its background, and the Safe Mode generator. The installer
+# copies both out of here into /boot/grub and /etc/grub.d. They live in the
+# package rather than only in the installer so that an apt-installed Castalia
+# gets the same boot menu as an installed one.
+install -Dm644 "$REPO/iso/grub/theme/theme.txt" \
+    "$STAGE$SHARE/grub/theme/theme.txt"
+install -Dm644 "$REPO/iso/boot-bg/splash.png" \
+    "$STAGE$SHARE/grub/theme/splash.png"
+install -Dm755 "$REPO/iso/grub/11_castalia_safe" \
+    "$STAGE$SHARE/grub/11_castalia_safe"
+
 # Openbox decorations per theme + the icon family
 for tdir in "$THEMES_OUT"/*/; do
     id=$(basename "$tdir")

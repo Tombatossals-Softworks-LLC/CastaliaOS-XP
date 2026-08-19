@@ -58,6 +58,29 @@ class SessionManagerTest(unittest.TestCase):
         self.assertIn('THEME="classic"', self.text)
         self.assertIn("/etc/castalia/theme.conf", self.text)
 
+    def test_safe_mode_is_read_from_the_kernel_cmdline(self):
+        # iso/grub/11_castalia_safe boots with castalia.safemode=1. If nothing
+        # reads it, the Safe Mode menu entry is just a slower normal boot.
+        self.assertIn("castalia.safemode=1", self.text)
+        self.assertIn("/proc/cmdline", self.text)
+        self.assertIn("CASTALIA_SAFE_MODE", self.text)
+
+    def test_safe_mode_strips_the_session(self):
+        for var in ("CASTALIA_REDUCE_MOTION=1", "CASTALIA_NO_SOUND=1"):
+            self.assertIn(f"export {var}", self.text, var)
+        # The user's theme does not survive a boot they took because the
+        # desktop would not come up.
+        self.assertIn('THEME="high-contrast"', self.text)
+        # §6.2 "minimal services": the notification server is gated on it.
+        gate = self.text.index('[ "$SAFE_MODE" != "1" ] &&')
+        self.assertLess(gate, self.text.index("castalia-notificaciones"))
+
+    def test_safe_mode_is_decided_before_the_theme(self):
+        # The theme block reads $SAFE_MODE; under `set -u` a later definition
+        # would not be a wrong theme, it would be a session that never starts.
+        self.assertLess(self.text.index("SAFE_MODE="),
+                        self.text.index('THEME="$(theme_from'))
+
     def test_wm_starts_before_panel(self):
         self.assertLess(self.text.index("supervise openbox"),
                         self.text.index("castalia-panel"))

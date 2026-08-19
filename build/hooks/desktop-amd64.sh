@@ -34,6 +34,14 @@ for qm in build/out/i18n/*.qm; do
     install -Dm644 "$qm" "$SHARE/i18n/$(basename "$qm")"
 done
 
+echo "castalia-hook: staging the GRUB boot identity (§6.2)"
+# What the installer copies into /boot/grub and /etc/grub.d on the target.
+# Same source and same destination as packages/mkdeb.sh, so an installed
+# machine gets its boot menu whichever way Castalia arrived.
+install -Dm644 iso/grub/theme/theme.txt "$SHARE/grub/theme/theme.txt"
+install -Dm644 iso/boot-bg/splash.png   "$SHARE/grub/theme/splash.png"
+install -Dm755 iso/grub/11_castalia_safe "$SHARE/grub/11_castalia_safe"
+
 echo "castalia-hook: building the shell (target Qt, correct ABI)"
 cmake -S shell -B /tmp/shellbuild -DCMAKE_BUILD_TYPE=Release
 cmake --build /tmp/shellbuild -j"$(nproc)"
