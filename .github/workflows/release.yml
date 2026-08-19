@@ -34,16 +34,23 @@ on:
         type: boolean
         default: false
 
+# Least privilege: only the publish job creates a Release. The build jobs run
+# a whole third-party toolchain and have no business holding a write token.
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   gates:
     name: Full QA gate (lint, unit, design/legal gates, build, render, E2E)
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Tag must match the VERSION file (§17.5)
         if: github.ref_type == 'tag'
@@ -54,7 +61,7 @@ jobs:
             exit 1; }
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.11"
 
@@ -73,20 +80,24 @@ jobs:
     name: Package — .deb + apt overlay repo
     needs: gates
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install Qt5 + packaging toolchain
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
             qtbase5-dev libqt5svg5-dev libxcb1-dev cmake g++ fonts-dejavu-core \
-            dpkg-dev
+            dpkg-dev qttools5-dev-tools
 
       - name: Build shell + .deb
+        # i18n_build.py release is not optional: mkdeb refuses to ship a
+        # language declared in Locale.cpp without its .qm catalogue.
         run: |
           PYTHONPATH=tools python3 tools/theme_export.py
+          python3 tools/i18n_build.py release
           cmake -S shell -B build/out/shell-build -DCMAKE_BUILD_TYPE=Release
           cmake --build build/out/shell-build -j4
           sh packages/mkdeb.sh
@@ -124,7 +135,7 @@ jobs:
           tar -C build/out -czf "castalia-repo-$ver.tar.gz" repo
 
       - name: Upload packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-packages
           path: |
@@ -138,7 +149,7 @@ jobs:
     timeout-minutes: 45
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install ISO + boot toolchain
         run: |
@@ -156,7 +167,7 @@ jobs:
             build/out/iso/castalia-live-amd64.iso --timeout 300
 
       - name: Upload the ISO
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: release-iso-live
           path: build/out/iso/castalia-live-amd64.iso
@@ -168,7 +179,7 @@ jobs:
     timeout-minutes: 90
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install ISO + boot toolchain
         run: |
@@ -188,24 +199,32 @@ jobs:
           test -s castalia-desktop-live.png
 
       - name: Upload the ISO + desktop proof
-        uses: actions/upload-artifact@v4
+        # Also on failure: the serial log next to the capture is the only
+        # evidence of why a release-blocking desktop boot did not come up.
+        if: always()
+        uses: actions/upload-artifact@v7
         with:
           name: release-iso-desktop
           path: |
             build/out/iso/castalia-live-desktop-amd64.iso
             castalia-desktop-live.png
+            castalia-desktop-live.serial.log
+          if-no-files-found: warn
 
   publish:
     name: Publish the GitHub Release (draft on tag push; live on publish dispatch)
     needs: [package, iso-live, iso-desktop]
     if: github.ref_type == 'tag' || (github.event_name == 'workflow_dispatch' && inputs.publish)
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Download all release artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: dist
           merge-multiple: true

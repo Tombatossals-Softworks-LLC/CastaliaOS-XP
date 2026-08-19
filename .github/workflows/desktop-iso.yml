@@ -10,6 +10,9 @@ name: Desktop ISO (manual)
 on:
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   desktop-iso:
     name: Build + boot the graphical desktop ISO
@@ -17,7 +20,7 @@ jobs:
     timeout-minutes: 60
     steps:
       - name: Check out
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Install ISO + boot toolchain
         run: |
@@ -37,9 +40,13 @@ jobs:
           test -s castalia-desktop-live.png
 
       - name: Upload the desktop screenshot
-        uses: actions/upload-artifact@v4
+        # A failed boot is exactly when the serial log is worth having, so this
+        # runs even when the capture step failed.
+        if: always()
+        uses: actions/upload-artifact@v7
         with:
           name: castalia-desktop-live
           path: |
             castalia-desktop-live.png
             castalia-desktop-live.serial.log
+          if-no-files-found: warn
