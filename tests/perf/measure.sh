@@ -109,6 +109,17 @@ pss_mb() {
     fi
 }
 
+# RSS of a process in MB. The Bible's §16.2 column says RSS; we gate on PSS
+# (see castalia_qa/perf.py) but report both, because they answer different
+# questions and the gap between them is itself information.
+rss_mb() {
+    if [ -r "/proc/$1/statm" ]; then
+        awk '{printf "%.1f", $2 * 4 / 1024}' "/proc/$1/statm"
+    else
+        echo 0
+    fi
+}
+
 # Sum the PSS of every process matching a pattern.
 pss_sum_mb() {
     total=0
@@ -183,7 +194,15 @@ while [ $i -lt 150 ]; do
 done
 sleep 2                       # let both planes settle before reading memory
 SHELL_PSS=$(pss_sum_mb "$BINDIR/(panel|desktop)/castalia-")
-echo "measure:   shell PSS = ${SHELL_PSS} MB" >&2
+# Per-process, so a breach says WHICH plane grew rather than just that one did.
+PANEL_PID=$(pgrep -f "$BINDIR/panel/castalia-panel" | head -n 1)
+DESKTOP_PID=$(pgrep -f "$BINDIR/desktop/castalia-desktop" | head -n 1)
+PANEL_PSS=$([ -n "${PANEL_PID:-}" ] && pss_mb "$PANEL_PID" || echo 0)
+DESKTOP_PSS=$([ -n "${DESKTOP_PID:-}" ] && pss_mb "$DESKTOP_PID" || echo 0)
+PANEL_RSS=$([ -n "${PANEL_PID:-}" ] && rss_mb "$PANEL_PID" || echo 0)
+DESKTOP_RSS=$([ -n "${DESKTOP_PID:-}" ] && rss_mb "$DESKTOP_PID" || echo 0)
+printf 'measure:   shell PSS = %s MB (panel %.1f, desktop %.1f; RSS %s / %s)\n' \
+    "$SHELL_PSS" "$PANEL_PSS" "$DESKTOP_PSS" "$PANEL_RSS" "$DESKTOP_RSS" >&2
 
 echo "measure: Explorer, best of $RUNS" >&2
 if EX=$(best_of "$RUNS" "$EXPLORER" --demo); then
@@ -205,6 +224,12 @@ REPORT=$(cat <<EOF
 {
   "screen": "800x600",
   "runs": $RUNS,
+  "diagnostics": {
+    "panel_pss_mb": $PANEL_PSS,
+    "desktop_pss_mb": $DESKTOP_PSS,
+    "panel_rss_mb": $PANEL_RSS,
+    "desktop_rss_mb": $DESKTOP_RSS
+  },
   "measurements": {
     "shell_pss_mb": $SHELL_PSS,
     "explorer_pss_mb": $EX_PSS,

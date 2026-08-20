@@ -159,23 +159,49 @@ ControlCenter::ControlCenter(const QString &repoRoot, const QString &themeId,
     }
     root->addWidget(m_categories);
 
+    // A placeholder per category keeps the stack's indices equal to the
+    // category list's rows; showPage() swaps in the real panel on first use.
     m_pages = new QStackedWidget(central);
-    m_pages->addWidget(buildAppearance());
-    m_pages->addWidget(buildDisplay());
-    m_pages->addWidget(buildScreensaver());
-    m_pages->addWidget(buildSound());
-    m_pages->addWidget(buildNetwork());
-    m_pages->addWidget(buildPower());
-    m_pages->addWidget(buildRecovery());
-    m_pages->addWidget(buildLanguage());
-    m_pages->addWidget(buildAbout());
+    const int categoryCount = m_categories->count();
+    m_built.fill(nullptr, categoryCount);
+    for (int i = 0; i < categoryCount; ++i)
+        m_pages->addWidget(new QWidget(m_pages));
     root->addWidget(m_pages, 1);
 
     connect(m_categories, &QListWidget::currentRowChanged,
-            m_pages, &QStackedWidget::setCurrentIndex);
+            this, &ControlCenter::showPage);
     m_categories->setCurrentRow(0);
 
     setCentralWidget(central);
+}
+
+void ControlCenter::showPage(int index)
+{
+    if (index < 0 || index >= m_built.size())
+        return;
+    if (!m_built[index]) {
+        QWidget *(ControlCenter::*const builders[])() = {
+            &ControlCenter::buildAppearance, &ControlCenter::buildDisplay,
+            &ControlCenter::buildScreensaver, &ControlCenter::buildSound,
+            &ControlCenter::buildNetwork,    &ControlCenter::buildPower,
+            &ControlCenter::buildRecovery,   &ControlCenter::buildLanguage,
+            &ControlCenter::buildAbout,
+        };
+        // The table and the category list are two orderings of the same nine
+        // panels, and nothing but this line makes them agree — so say so
+        // loudly rather than silently showing Sound under "Red".
+        Q_ASSERT(int(sizeof(builders) / sizeof(builders[0])) == m_built.size());
+        QWidget *page = (this->*builders[index])();
+        // insertWidget puts the real page at `index` and pushes the
+        // placeholder to index+1; removing it leaves every other page's
+        // index untouched.
+        QWidget *placeholder = m_pages->widget(index);
+        m_pages->insertWidget(index, page);
+        m_pages->removeWidget(placeholder);
+        delete placeholder;
+        m_built[index] = page;
+    }
+    m_pages->setCurrentIndex(index);
 }
 
 QWidget *ControlCenter::buildAppearance()

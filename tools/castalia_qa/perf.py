@@ -19,6 +19,15 @@ than on a Pentium 4:
   size, not on how fast the machine is, and the runner is amd64 while FLOOR is
   i686 — 64-bit pointers make our reading the *pessimistic* one. Under budget
   here means under budget there.
+  One honest caveat, flagged rather than resolved here: §16.2's column is
+  headed *RSS*, and this gates *PSS*. For the shell row that is unavoidable —
+  the panel and the desktop share one copy of Qt, and adding their RSS counts
+  it twice — but for a single app PSS is the more generous of the two, so a
+  breach measured this way is a real breach and then some. Whether the §16.2
+  numbers were ever meant as RSS on a 64-bit build is a budget question, and
+  §16.4 makes budget changes a signed-off decision on purpose. The report
+  prints both numbers so the decision can be made on evidence.
+
 * **Latency** is not. A cloud runner is many times faster than the FLOOR
   machine, so passing here says nothing about passing there; §19.2 keeps that
   promise on real hardware. What this catches is the regression that turns a
@@ -130,6 +139,21 @@ def evaluate(report: dict) -> list[Result]:
     return out
 
 
+def format_diagnostics(report: dict) -> str:
+    """Numbers the gate does not judge but a person reading a breach wants.
+
+    A failing total tells you the shell grew; it does not tell you which
+    plane grew, or whether the gap between PSS and RSS is where the argument
+    actually is. Both belong next to the verdict, not in a separate hunt.
+    """
+    diag = report.get("diagnostics") or {}
+    if not diag:
+        return ""
+    rows = "  ".join(f"{k.replace('_mb', '')}={v}MB"
+                     for k, v in sorted(diag.items()))
+    return f"\nBreakdown (not gated): {rows}"
+
+
 def format_report(results: list[Result]) -> str:
     lines = [
         f"{'metric':<44} {'measured':>10} {'budget':>9} "
@@ -166,6 +190,9 @@ def main(argv: list[str]) -> int:
 
     results = evaluate(report)
     print(format_report(results))
+    diag = format_diagnostics(report)
+    if diag:
+        print(diag)
 
     over = [r for r in results if r.failed]
     missing = [r for r in results if r.missing]

@@ -7,6 +7,7 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QVector>
 
 #include "ThemeTokens.h"
 
@@ -24,6 +25,13 @@ signals:
     void themeChanged(const QString &themeId);
 
 private:
+    // Pages are built the first time they are shown, not up front. Nine
+    // panels' worth of widgets — including the Appearance page, which paints
+    // a live preview swatch for every bundled theme — used to be constructed
+    // in the ctor, so opening the hub to change one setting paid for all of
+    // them. See showPage(); the §16.2 memory budget is what caught it.
+    void showPage(int index);
+
     QWidget *buildAppearance();
     QWidget *buildDisplay();
     QWidget *buildScreensaver();
@@ -50,6 +58,8 @@ private:
     ThemeTokens m_tokens;
     QListWidget *m_categories = nullptr;
     QStackedWidget *m_pages = nullptr;
+    //: One entry per category, in the same order; null until first shown.
+    QVector<QWidget *> m_built;
     QLabel *m_appearanceStatus = nullptr;
     QLabel *m_wallpaperStatus = nullptr;
     QLabel *m_languageStatus = nullptr;
