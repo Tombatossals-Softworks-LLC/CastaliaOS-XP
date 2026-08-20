@@ -133,14 +133,36 @@ class PreservesTheOtherOsTest(unittest.TestCase):
             self.assertGreaterEqual(part.start_mib, self.cfg.free_start_mib)
 
     def test_nothing_is_written_past_the_free_region(self):
-        # Whole-disk root runs to "100%"; alongside must stop dead at the end
-        # of the gap, because what comes after it is somebody else's data.
         for part in self.plan.partitions:
             self.assertLessEqual(part.end_mib, self.cfg.free_end_mib)
-        root = [s for s in self.plan.steps if s.title == "Create root partition"]
-        self.assertEqual(len(root), 1)
-        self.assertNotIn("100%", root[0].argv)
-        self.assertIn(f"{self.cfg.free_end_mib}MiB", root[0].argv)
+
+    def test_a_gap_with_a_partition_after_it_stops_at_the_gap(self):
+        # The dangerous case: free space with somebody else's data AFTER it,
+        # where "100%" would run straight through them. Root must name the
+        # end of the gap. (Two existing partitions cannot reach here — three
+        # more primaries would not fit an msdos label — so the way to build
+        # this case is one partition sitting at the end of the disk.)
+        d = disk()
+        tail = PartitionInfo("/dev/sda1", 1, 150 * GiB, 50 * GiB, "ntfs",
+                             "Windows")
+        cfg = alongside_cfg(d, [tail])
+        plan = build_plan(cfg, d.size_mib)
+        self.assertEqual(cfg.free_start_mib, 1)
+        self.assertEqual(cfg.free_end_mib, 150 * GiB)
+        root = next(s for s in plan.steps if s.title == "Create root partition")
+        self.assertNotIn("100%", root.argv)
+        self.assertIn(f"{150 * GiB}MiB", root.argv)
+        self.assertLessEqual(plan.root.end_mib, tail.start_mib)
+
+    def test_a_gap_to_the_end_of_the_disk_uses_100_percent(self):
+        # parted refuses an end named as the disk's exact size — one byte past
+        # the last addressable one. "100%" is the same span and the spelling
+        # it accepts. The loopback test found this; this keeps it found.
+        root = next(s for s in self.plan.steps
+                    if s.title == "Create root partition")
+        self.assertEqual(self.cfg.free_end_mib, self.d.size_mib)
+        self.assertIn("100%", root.argv)
+        self.assertNotIn(f"{self.d.size_mib}MiB", root.argv)
 
     def test_new_partitions_continue_the_existing_numbering(self):
         self.assertEqual([p.index for p in self.plan.partitions], [2, 3, 4])

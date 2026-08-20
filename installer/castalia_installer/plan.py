@@ -278,13 +278,18 @@ def build_plan(
     s(Step("Create swap partition",
            ["parted", "-s", disk, "mkpart", "primary", "linux-swap",
             f"{swap.start_mib}MiB", f"{swap.end_mib}MiB"], destructive=True))
+    # Whole-disk takes everything left. Alongside stops dead at the end of the
+    # free region, because what comes after it is somebody else's partition —
+    # EXCEPT when the region runs to the end of the disk, where "100%" is both
+    # the same span and the only spelling parted accepts. Naming the last MiB
+    # explicitly is one byte past the last addressable one and parted refuses
+    # it, which is how the loopback test found this.
+    root_end = "100%"
+    if alongside and root.end_mib < disk_size_mib:
+        root_end = f"{root.end_mib}MiB"
     s(Step("Create root partition",
            ["parted", "-s", disk, "mkpart", "primary", "ext4",
-            f"{root.start_mib}MiB",
-            # Whole-disk takes everything that is left; alongside stops dead
-            # at the end of the free region, because what comes after it is
-            # somebody else's partition.
-            "100%" if not alongside else f"{root.end_mib}MiB"],
+            f"{root.start_mib}MiB", root_end],
            destructive=True))
     s(Step("Re-read the partition table",
            ["partprobe", disk], destructive=True))
