@@ -12,14 +12,16 @@
 #   e2e     live end-to-end under Xvfb + Openbox: EWMH taskbar smoke,
 #           the full app suite, and the real session entry point (needs
 #           `build`; Xvfb/openbox/x11-utils/imagemagick on the host)
+#   perf    the §16 budgets: shell/app memory and launch latency, measured
+#           off real binaries under Xvfb (needs `build`)
 #   iso     REAL live-amd64 ISO build + QEMU boot assert (root + debootstrap
 #           + qemu; slow — this is the nightly/release gate)
 #
-# Presets:  quick = lint unit gates          (no toolchain beyond python3)
-#           full  = quick + build render e2e (the per-commit CI surface)
+# Presets:  quick = lint unit gates               (no toolchain beyond python3)
+#           full  = quick + build render e2e perf (the per-commit CI surface)
 #
 # Usage:
-#   sh tests/run.sh [quick|full|iso|lint|unit|gates|build|render|e2e]...
+#   sh tests/run.sh [quick|full|iso|lint|unit|gates|build|render|e2e|perf]...
 #
 # Default is `quick`. Tiers run in the order given and stop at the first
 # failure. Exit 0 = everything requested passed.
@@ -100,6 +102,13 @@ tier_e2e() {
     sh tests/e2e/session-smoke.sh --bindir "$BINDIR" --repo "$REPO"
 }
 
+tier_perf() {
+    say perf "§16 budgets: FLOOR memory + launch latency"
+    sh tests/perf/measure.sh --bindir "$BINDIR" --repo "$REPO" \
+        --runs 3 --out /tmp/castalia-perf.json
+    PYTHONPATH=tools python3 -m castalia_qa.perf /tmp/castalia-perf.json
+}
+
 tier_iso() {
     say iso "REAL live-amd64 ISO build (root + debootstrap; slow)"
     sh build/mkiso.sh --edition live-amd64
@@ -113,8 +122,8 @@ for arg in "$@"; do
     case "$arg" in
         quick) tier_lint; tier_unit; tier_gates ;;
         full)  tier_lint; tier_unit; tier_gates
-               tier_build; tier_render; tier_e2e ;;
-        lint|unit|gates|build|render|e2e|iso) "tier_$arg" ;;
+               tier_build; tier_render; tier_e2e; tier_perf ;;
+        lint|unit|gates|build|render|e2e|perf|iso) "tier_$arg" ;;
         *) echo "run: unknown tier '$arg' (see the header of tests/run.sh)" >&2
            exit 2 ;;
     esac

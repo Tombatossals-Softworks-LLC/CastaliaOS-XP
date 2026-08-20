@@ -213,6 +213,15 @@ jobs:
       - name: E2E — real session entry point (boot, supervise, logout, §7.1)
         run: sh tests/e2e/session-smoke.sh
 
+      - name: Performance budgets (Bible §16, FLOOR memory + launch latency)
+        # Measured on the same X server the E2E suite just used, at the FLOOR
+        # screen size with animations off. Memory is gated at the Bible's
+        # FLOOR numbers; launch latency at a deliberately loose multiple,
+        # because a cloud runner is not a Pentium 4 — see castalia_qa/perf.py.
+        run: |
+          sh tests/perf/measure.sh --runs 3 --out /tmp/e2e-shots/perf.json
+          PYTHONPATH=tools python3 -m castalia_qa.perf /tmp/e2e-shots/perf.json
+
       - name: Dark-theme desktop under a real WM (Openbox decorations, §8.6)
         run: |
           sh tests/live/desktop-hero.sh --theme medianoche \
