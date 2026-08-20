@@ -173,7 +173,8 @@ def format_diagnostics(report: dict) -> str:
                 f"budget is set below the toolkit's floor on this build. "
                 f"§16.4 makes changing it a signed-off decision — this is "
                 f"the evidence for that conversation, not a licence to "
-                f"raise it here.")
+                f"raise it here. It is written up, with the i386 numbers, in "
+                f"docs/evidence/perf-16-memory-floor.md.")
     return "\n".join(out)
 
 
