@@ -151,7 +151,30 @@ def format_diagnostics(report: dict) -> str:
         return ""
     rows = "  ".join(f"{k.replace('_mb', '')}={v}MB"
                      for k, v in sorted(diag.items()))
-    return f"\nBreakdown (not gated): {rows}"
+    out = [f"\nBreakdown (not gated): {rows}"]
+
+    # The baseline turns "this app is over budget" into an answerable
+    # question. Every §16.2 app number is the cost of one Castalia window
+    # plus what that app does; if the first term alone is already near the
+    # budget, no amount of work on the second term will get under it, and
+    # the honest response is a §16.4 budget conversation rather than a
+    # doomed optimisation.
+    base = diag.get("baseline_window_pss_mb")
+    if isinstance(base, (int, float)) and base > 0:
+        out.append(
+            f"An empty Castalia window (Qt5 + libcastalia-ui + theme) costs "
+            f"{base:.1f}MB before the app does anything.")
+        tightest = min((b for b in MEMORY if "shell" not in b.key),
+                       key=lambda b: b.floor, default=None)
+        if tightest is not None and base > tightest.floor * 0.8:
+            out.append(
+                f"  That is {base / tightest.floor:.0%} of the tightest app "
+                f"budget ({tightest.what}, {tightest.floor:.0f}MB), so that "
+                f"budget is set below the toolkit's floor on this build. "
+                f"§16.4 makes changing it a signed-off decision — this is "
+                f"the evidence for that conversation, not a licence to "
+                f"raise it here.")
+    return "\n".join(out)
 
 
 def format_report(results: list[Result]) -> str:
