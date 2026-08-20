@@ -4,6 +4,26 @@ A **Qt5 graphical installer** and an **ncurses text fallback**, both driving the
 **same Python backend** so logic is shared and testable. See
 [`docs/PROJECT_BIBLE.md` §14](../docs/PROJECT_BIBLE.md#14-installer-and-first-boot-experience).
 
+## Install modes (§14.3)
+
+| Mode | What it does | Status |
+|---|---|---|
+| `--mode whole-disk` (default) | Writes a fresh partition table over the target. Erases everything. | ✅ |
+| `--mode alongside` | Puts /boot, swap and / in **unallocated space**, leaves every existing partition exactly where it is, and does not replace the partition table. GRUB picks up the other OS through `os-prober` (see `iso/grub/README.md`). | ✅ |
+| shrink an existing partition to make room | — | ❌ not implemented; `alongside` is offered only when there is already free space |
+| manual partitioning | — | ❌ not implemented |
+
+`alongside` refuses itself rather than improvising: too small a gap, no room
+left in the msdos table for three more primaries, or a /boot that would land
+past the first 128 GiB (§6.2) each mean the mode is not offered at all.
+
+Proof it does what it says: `installer/tests/test_alongside.py` asserts the
+plan (no `mklabel`, nothing written outside the free region, the existing
+partition never named), and `installer/tests/alongside-smoke.sh` runs the real
+engine against a real loopback disk carrying a real filesystem full of data,
+and checksums it before and after. §23.7 #3 asks for "verified"; that is what
+verified looks like.
+
 ## Contents
 
 | Path | Status | Purpose |
@@ -11,7 +31,7 @@ A **Qt5 graphical installer** and an **ncurses text fallback**, both driving the
 | `castalia_installer/model.py` | ✅ | `InstallConfig` + `DiskInfo`, partition sizing, validation — pure data |
 | `castalia_installer/plan.py` | ✅ | `build_plan(config, disk)` → an ordered, inspectable list of `Step`s (no side effects) |
 | `castalia_installer/engine.py` | ✅ | executes a plan through a `Runner` boundary, behind the §14.5 confirmation gate |
-| `castalia_installer/probe.py` | ✅ | disk discovery via `lsblk` (`parse_lsblk` is pure/tested) |
+| `castalia_installer/probe.py` | ✅ | disk **and partition** discovery via `lsblk` — what is already on the target, so §14.3 can be honoured (both parsers pure/tested) |
 | `castalia_installer/tui.py` | ✅ | the text installer — the guaranteed fallback (§14.5 #5) |
 | `castalia_installer/__main__.py` | ✅ | CLI: `--dry-run`, `--copy-only`, `--confirm-erase DISK` |
 | `gui/` | ✅ | Qt5 wizard (`castalia-instalador`) driving the backend |

@@ -20,7 +20,15 @@ from .engine import (
     SubprocessRunner,
     execute,
 )
-from .model import DiskInfo, InstallConfig
+from .model import (
+    MODE_ALONGSIDE,
+    MODE_WHOLE_DISK,
+    DiskInfo,
+    InstallConfig,
+    available_modes,
+    largest_free_region,
+)
+from .probe import probe_partitions
 from .plan import build_plan
 
 
@@ -60,6 +68,11 @@ def build_argparser() -> argparse.ArgumentParser:
     p.add_argument("--copy-only", action="store_true",
                    help="partition/format/copy/fstab only, skip the chroot "
                         "phase (bootloader, user) — used by the loopback smoke")
+    p.add_argument("--mode", choices=[MODE_WHOLE_DISK, MODE_ALONGSIDE],
+                   default=MODE_WHOLE_DISK,
+                   help="whole-disk erases the target; alongside installs "
+                        "into free space and leaves existing partitions "
+                        "untouched (Bible §14.3)")
     p.add_argument("--confirm-erase", metavar="DISK", default=None,
                    help="type the target disk to authorise destructive steps")
     p.add_argument("--password", default=None,
@@ -86,6 +99,7 @@ def config_from_args(args: argparse.Namespace) -> InstallConfig:
         swap_mib=args.swap_mib,
         source_root=args.source_root,
         mount_root=args.mount_root,
+        mode=args.mode,
     )
 
 
@@ -101,6 +115,31 @@ def main(argv: list[str] | None = None) -> int:
         size_mib = 40 * 1024
 
     disk = DiskInfo(path=args.disk, size_mib=size_mib)
+
+    # An alongside install has to be told WHERE the free space is, and the
+    # only trustworthy source for that is the disk itself. Reading it here
+    # rather than taking it on the command line means the offsets the plan
+    # uses are the ones the partition table actually has — a stale figure
+    # typed by a person is a partition written over somebody's data.
+    existing = probe_partitions(args.disk) if not args.dry_run else []
+    if cfg.mode == MODE_ALONGSIDE:
+        # With no partitions at all — a blank disk, or a dry run that never
+        # looked — the "free region" is the whole disk and index 1, which is
+        # the correct answer rather than a special case.
+        region = largest_free_region(disk, existing)
+        if region is None:
+            print("castalia-install: error: no free space big enough for an "
+                  "alongside install on " + args.disk, file=sys.stderr)
+            for part in existing:
+                print(f"  existing: {part.describe()}", file=sys.stderr)
+            print("  offer --mode whole-disk (erases everything) instead",
+                  file=sys.stderr)
+            return 2
+        else:
+            cfg.first_index = max((pt.index for pt in existing), default=0) + 1
+        cfg.free_start_mib = region.start_mib
+        cfg.free_end_mib = region.end_mib
+
     problems = cfg.validate(disk)
     if problems:
         for pr in problems:
@@ -116,7 +155,19 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.dry_run:
         print(f"# Castalia install plan for {cfg.target_disk} "
-              f"({size_mib} MiB)")
+              f"({size_mib} MiB), mode: {cfg.mode}")
+        if cfg.mode == MODE_ALONGSIDE:
+            print(f"#   installing into {cfg.free_start_mib}"
+                  f"–{cfg.free_end_mib} MiB; no existing partition is "
+                  f"touched and the partition table is not replaced")
+            for part in existing:
+                print(f"#   keeping {part.describe()}")
+        elif existing:
+            print("#   ERASES these existing partitions:")
+            for part in existing:
+                print(f"#     {part.describe()}")
+            print(f"#   (this disk could also take "
+                  f"{', '.join(available_modes(disk, existing))})")
         print(f"#   /boot {plan.boot.size_mib} MiB · swap "
               f"{plan.swap.size_mib} MiB · / {plan.root.size_mib} MiB")
         for i, step in enumerate(plan.steps, 1):

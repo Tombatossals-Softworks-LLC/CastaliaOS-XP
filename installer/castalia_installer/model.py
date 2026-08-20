@@ -23,6 +23,14 @@ FIRST_128_GIB_MIB = 128 * 1024
 MIN_DISK_MIB = 8 * 1024
 MIN_ROOT_MIB = 4 * 1024
 ALIGN_MIB = 1  # 1 MiB partition alignment (universally safe)
+# A free region has to hold /boot + swap + a usable root before "install
+# alongside" is worth offering. Offering it and then failing halfway is worse
+# than not offering it (§14.5 #2: always leave a bootable path).
+MIN_ALONGSIDE_MIB = ALIGN_MIB + BOOT_MIB + 512 + MIN_ROOT_MIB
+# An msdos label holds four primary partitions and we need three. A disk that
+# already has two is not one we can install alongside on without extended
+# partitions, which is a trap on old BIOSes and is deliberately not attempted.
+MAX_MSDOS_PRIMARIES = 4
 
 
 def default_swap_mib(ram_mib: int) -> int:
@@ -46,6 +54,120 @@ def partition_path(disk: str, index: int) -> str:
     if disk and disk[-1].isdigit():
         return f"{disk}p{index}"
     return f"{disk}{index}"
+
+
+#: Guided install writes a fresh partition table over everything.
+MODE_WHOLE_DISK = "whole-disk"
+#: Install into unallocated space, leaving every existing partition alone.
+MODE_ALONGSIDE = "alongside"
+INSTALL_MODES = (MODE_WHOLE_DISK, MODE_ALONGSIDE)
+
+
+@dataclass(frozen=True)
+class Region:
+    """A span of a disk, in MiB. Used for both free gaps and whole extents."""
+
+    start_mib: int
+    end_mib: int
+
+    @property
+    def size_mib(self) -> int:
+        return max(0, self.end_mib - self.start_mib)
+
+
+@dataclass(frozen=True)
+class PartitionInfo:
+    """An existing partition found on a candidate disk (§14.3).
+
+    ``kind`` is what we are willing to say about it in the interface, which is
+    deliberately coarser than the filesystem: the installer needs to know "is
+    there a Windows here that I must not touch", not which NTFS version it is.
+    """
+
+    path: str
+    index: int
+    start_mib: int
+    size_mib: int
+    fstype: str = ""
+    label: str = ""
+
+    @property
+    def end_mib(self) -> int:
+        return self.start_mib + self.size_mib
+
+    @property
+    def kind(self) -> str:
+        fs = (self.fstype or "").lower()
+        if fs in ("ntfs", "ntfs3"):
+            return "windows"
+        if fs == "vfat" and "efi" in (self.label or "").lower():
+            return "efi"
+        if fs in ("ext2", "ext3", "ext4", "btrfs", "xfs"):
+            return "linux"
+        if fs in ("swap", "linux-swap"):
+            return "swap"
+        return "data" if fs else "unknown"
+
+    def describe(self) -> str:
+        names = {"windows": "Windows", "efi": "arranque EFI",
+                 "linux": "Linux", "swap": "intercambio",
+                 "data": "datos", "unknown": "sin identificar"}
+        label = f" «{self.label}»" if self.label else ""
+        return f"{self.path}{label}: {names[self.kind]}, {self.size_mib} MiB"
+
+
+def free_regions(disk_size_mib: int,
+                 partitions: list[PartitionInfo]) -> list[Region]:
+    """Unallocated spans of a disk, largest first.
+
+    Overlapping or out-of-order partition entries are tolerated rather than
+    trusted: a partition table is read off someone's real machine, and one
+    that does not make sense must produce no free space rather than a
+    plausible-looking gap that is actually somebody's data.
+    """
+    cursor = ALIGN_MIB
+    gaps: list[Region] = []
+    for part in sorted(partitions, key=lambda p: p.start_mib):
+        if part.start_mib > cursor:
+            gaps.append(Region(cursor, part.start_mib))
+        cursor = max(cursor, part.end_mib)
+    if disk_size_mib > cursor:
+        gaps.append(Region(cursor, disk_size_mib))
+    return sorted((g for g in gaps if g.size_mib > 0),
+                  key=lambda g: g.size_mib, reverse=True)
+
+
+def available_modes(disk: "DiskInfo",
+                    partitions: list[PartitionInfo]) -> list[str]:
+    """Which install modes this disk can actually offer, best first (§14.3).
+
+    "Alongside" is offered only when it can be carried out without touching a
+    single existing partition — that is the whole promise of the mode, and a
+    version of it that shrinks something is a different, more dangerous
+    feature that this installer does not have yet.
+    """
+    modes = []
+    if largest_free_region(disk, partitions) is not None:
+        modes.append(MODE_ALONGSIDE)
+    if disk.is_installable():
+        modes.append(MODE_WHOLE_DISK)
+    return modes
+
+
+def largest_free_region(disk: "DiskInfo",
+                        partitions: list[PartitionInfo]) -> "Region | None":
+    """The free span an alongside install would use, or None if there is none.
+
+    None is the answer whenever anything makes the mode unsafe or impossible:
+    no gap big enough, or no room left in the partition table for the three
+    partitions the layout needs.
+    """
+    if len(partitions) + 3 > MAX_MSDOS_PRIMARIES:
+        return None
+    for gap in free_regions(disk.size_mib, partitions):
+        if gap.size_mib >= MIN_ALONGSIDE_MIB:
+            return gap
+    return None
 
 
 @dataclass(frozen=True)
@@ -98,6 +220,14 @@ class InstallConfig:
     source_root: str = "/run/live/rootfs/filesystem.squashfs"
     mount_root: str = "/target"
     swap_mib: int = field(default=0)  # 0 => derive from ram_mib
+    #: MODE_WHOLE_DISK writes a fresh table over everything. MODE_ALONGSIDE
+    #: adds partitions inside free space and leaves every existing one alone
+    #: (§14.3); free_start_mib/free_end_mib bound the span it may use and
+    #: first_index is where the existing table's numbering continues.
+    mode: str = MODE_WHOLE_DISK
+    free_start_mib: int = 0
+    free_end_mib: int = 0
+    first_index: int = 1
 
     def resolved_swap_mib(self) -> int:
         return self.swap_mib if self.swap_mib > 0 else default_swap_mib(
@@ -123,6 +253,24 @@ class InstallConfig:
                 f"disk cannot fit layout: needs >= {needed} MiB, "
                 f"has {disk.size_mib} MiB"
             )
+        if self.mode not in INSTALL_MODES:
+            errors.append(f"unknown install mode: {self.mode}")
+        if self.mode == MODE_ALONGSIDE:
+            span = self.free_end_mib - self.free_start_mib
+            if span < MIN_ALONGSIDE_MIB:
+                errors.append(
+                    f"free space too small for an alongside install: "
+                    f"{span} MiB < {MIN_ALONGSIDE_MIB} MiB")
+            if self.free_start_mib < ALIGN_MIB:
+                errors.append("free region starts before the alignment floor")
+            if self.free_end_mib > disk.size_mib:
+                errors.append(
+                    f"free region ends past the disk "
+                    f"({self.free_end_mib} > {disk.size_mib} MiB)")
+            if self.first_index + 2 > MAX_MSDOS_PRIMARIES:
+                errors.append(
+                    f"no room in the partition table: an alongside install "
+                    f"needs three primaries from index {self.first_index}")
         if self.filesystem not in ("ext4",):
             errors.append(f"unsupported filesystem: {self.filesystem}")
         if not self.username.isascii() or not self.username.islower() \

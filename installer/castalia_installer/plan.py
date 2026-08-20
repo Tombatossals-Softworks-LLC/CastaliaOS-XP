@@ -15,6 +15,7 @@ from .model import (
     ALIGN_MIB,
     BOOT_MIB,
     FIRST_128_GIB_MIB,
+    MODE_ALONGSIDE,
     InstallConfig,
     Partition,
     partition_path,
@@ -121,6 +122,34 @@ def build_layout(cfg: InstallConfig, disk_size_mib: int) -> list[Partition]:
     return parts
 
 
+def build_alongside_layout(cfg: InstallConfig) -> list[Partition]:
+    """Lay /boot, swap and / inside the free region, touching nothing else.
+
+    Same three partitions as the guided layout, placed in the gap the probe
+    found instead of across the whole disk, and numbered on from whatever the
+    existing table already uses. Root takes the remainder of the region — not
+    the remainder of the disk, which is the difference between installing
+    beside somebody's Windows and installing over it.
+    """
+    swap_mib = cfg.resolved_swap_mib()
+    start = cfg.free_start_mib
+    boot_end = start + BOOT_MIB
+    # §6.2 again: a vintage BIOS has to be able to read the kernel, and free
+    # space late on a big disk is exactly where that stops being true.
+    if boot_end > FIRST_128_GIB_MIB:
+        raise ValueError(
+            f"/boot would start past the first 128 GiB ({start} MiB), where "
+            f"an old BIOS may not be able to read it (§6.2)")
+    swap_end = boot_end + swap_mib
+    i = cfg.first_index
+    return [
+        Partition(i, "boot", start, boot_end, "ext4", "castalia-boot"),
+        Partition(i + 1, "swap", boot_end, swap_end, "swap", "castalia-swap"),
+        Partition(i + 2, "root", swap_end, cfg.free_end_mib, "ext4",
+                  "castalia-root"),
+    ]
+
+
 def render_fstab(ctx: dict) -> str:
     """Produce /etc/fstab from probed UUIDs (ctx['uuids'][role])."""
     u = ctx["uuids"]
@@ -211,7 +240,9 @@ def build_plan(
     exercise the genuine destructive path (partition/format/mount/copy/fstab)
     against a disk image on any machine.
     """
-    parts = build_layout(cfg, disk_size_mib)
+    alongside = cfg.mode == MODE_ALONGSIDE
+    parts = (build_alongside_layout(cfg) if alongside
+             else build_layout(cfg, disk_size_mib))
     plan = Plan(cfg, parts)
     disk = cfg.target_disk
     mnt = cfg.mount_root
@@ -225,19 +256,36 @@ def build_plan(
     s = plan.steps.append
 
     # 1. Partition table + partitions (DESTRUCTIVE — gated in the engine).
-    s(Step(f"Create MS-DOS partition table on {disk}",
-           ["parted", "-s", disk, "mklabel", "msdos"], destructive=True))
+    if not alongside:
+        # Guided whole-disk: a fresh label, which is what erases the machine.
+        s(Step(f"Create MS-DOS partition table on {disk}",
+               ["parted", "-s", disk, "mklabel", "msdos"], destructive=True))
+    else:
+        # Alongside: the existing table stays exactly as it is. There is no
+        # mklabel here and there must never be one — it is the single command
+        # that would turn "install next to Windows" into "install over
+        # Windows", and it is worth this many words to say so.
+        s(Step(f"Keep the existing partition table on {disk} "
+               f"(installing into {root.start_mib - BOOT_MIB - swap.size_mib}"
+               f"–{root.end_mib} MiB)",
+               ["parted", "-s", disk, "print"]))
     s(Step("Create /boot partition",
            ["parted", "-s", disk, "mkpart", "primary", "ext4",
             f"{boot.start_mib}MiB", f"{boot.end_mib}MiB"], destructive=True))
     s(Step("Mark /boot bootable",
-           ["parted", "-s", disk, "set", "1", "boot", "on"], destructive=True))
+           ["parted", "-s", disk, "set", str(boot.index), "boot", "on"],
+           destructive=True))
     s(Step("Create swap partition",
            ["parted", "-s", disk, "mkpart", "primary", "linux-swap",
             f"{swap.start_mib}MiB", f"{swap.end_mib}MiB"], destructive=True))
     s(Step("Create root partition",
            ["parted", "-s", disk, "mkpart", "primary", "ext4",
-            f"{root.start_mib}MiB", "100%"], destructive=True))
+            f"{root.start_mib}MiB",
+            # Whole-disk takes everything that is left; alongside stops dead
+            # at the end of the free region, because what comes after it is
+            # somebody else's partition.
+            "100%" if not alongside else f"{root.end_mib}MiB"],
+           destructive=True))
     s(Step("Re-read the partition table",
            ["partprobe", disk], destructive=True))
 

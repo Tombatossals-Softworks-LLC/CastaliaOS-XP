@@ -341,6 +341,12 @@ jobs:
           sudo modprobe loop || true
           sudo sh installer/tests/loopback-smoke.sh
 
+      - name: "Dual-boot: install beside an existing OS without eating it"
+        # §23.7 #3 says "verified", so this verifies it the only way that
+        # cannot be argued with: real partition, real data, checksummed
+        # before and after a real install.
+        run: sudo sh installer/tests/alongside-smoke.sh
+
   iso-boot:
     name: Live ISO build + QEMU boot (Bible §18 Phase 1, §19.1)
     runs-on: ubuntu-latest
