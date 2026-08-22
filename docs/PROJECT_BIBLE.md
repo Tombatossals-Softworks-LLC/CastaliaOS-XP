@@ -2048,6 +2048,14 @@ assume a very small team (1–3 people) and are deliberately conservative.
   been certified yet, which makes the first such claim a deliberate edit
   rather than a default. Remaining: the Hardware Center reading the report,
   and applying quirks.
+- **32-bit ISOs build and boot** ✅: `live-i386` (the lean boot proof, per
+  commit) and `classic32` (the full edition, nightly) are built and then
+  booted under `qemu-system-i386 -cpu coreduo` — a CPU that cannot execute
+  64-bit code at all. Until this existed, every ISO ever built was amd64,
+  on a product whose FLOOR (§4.1, §16) is a 32-bit Pentium 4: the
+  architecture the promise is about was the one nothing proved.
+  `qemu-system-x86_64` would boot a 32-bit kernel perfectly happily, which is
+  exactly why it cannot be the thing that proves one.
 - **Non-goals:** shell, apps, GUI installer (text install OK here).
 - **Acceptance:** boots + text-installs on FLOOR/TARGET; wired DHCP + audio work;
   apt installs from the Castalia repo.

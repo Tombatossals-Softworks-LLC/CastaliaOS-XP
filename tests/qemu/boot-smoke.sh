@@ -5,9 +5,16 @@
 #
 # Usage:
 #   sh tests/qemu/boot-smoke.sh ISO [--mem MB] [--timeout SEC] [--marker STR]
+#                                   [--qemu BINARY] [--cpu MODEL]
 #
 # Defaults model the FLOOR tier (§16): 1 vCPU, 512 MB, no KVM (TCG), so the
 # result reflects slow-CPU behaviour. Exit 0 = booted, 1 = marker not seen.
+#
+# --qemu/--cpu exist for the 32-bit editions. qemu-system-x86_64 will happily
+# boot a 32-bit kernel, which is precisely why it is the wrong emulator to
+# prove one with: a component that quietly needed 64-bit would pass. The i386
+# gate runs `qemu-system-i386 -cpu coreduo` — a CPU that cannot execute
+# 64-bit code at all, and the nearest model QEMU has to the §16 TARGET tier.
 
 set -eu
 
@@ -15,6 +22,8 @@ ISO=${1:?usage: boot-smoke.sh ISO [--mem MB] [--timeout SEC] [--marker STR]}
 shift || true
 MEM=512
 TIMEOUT=180
+QEMU=qemu-system-x86_64
+CPU=
 # Userspace-only markers: each requires the kernel to have booted and init to
 # have run. Deliberately NOT the bootloader menu title (which also contains
 # "Castalia Classic") — that would false-pass on the isolinux screen.
@@ -25,6 +34,8 @@ while [ $# -gt 0 ]; do
         --mem)     MEM=${2:?}; shift 2 ;;
         --timeout) TIMEOUT=${2:?}; shift 2 ;;
         --marker)  MARKER=${2:?}; shift 2 ;;
+        --qemu)    QEMU=${2:?}; shift 2 ;;
+        --cpu)     CPU=${2:?}; shift 2 ;;
         *) echo "boot-smoke: unknown option: $1" >&2; exit 2 ;;
     esac
 done
@@ -33,12 +44,20 @@ done
 LOG=$(mktemp)
 trap 'rm -f "$LOG"' EXIT
 
-echo "boot-smoke: booting $ISO (mem=${MEM}M, 1 vCPU, TCG, timeout=${TIMEOUT}s)"
+command -v "$QEMU" >/dev/null 2>&1 || {
+    echo "boot-smoke: no such emulator: $QEMU" >&2; exit 2; }
+
+echo "boot-smoke: booting $ISO with $QEMU${CPU:+ -cpu $CPU}"
+echo "boot-smoke:   (mem=${MEM}M, 1 vCPU, TCG, timeout=${TIMEOUT}s)"
 
 # The guest was configured with console=ttyS0 + agetty autologin, so a
 # successful boot writes the marker to the serial port, captured to a file
 # (no stdin/monitor dependency — safe in CI and background runs).
-timeout "$TIMEOUT" qemu-system-x86_64 \
+# shellcheck disable=SC2086  # $CPU_ARG is a deliberate two-word pair or empty
+CPU_ARG=""
+[ -n "$CPU" ] && CPU_ARG="-cpu $CPU"
+# shellcheck disable=SC2086
+timeout "$TIMEOUT" "$QEMU" $CPU_ARG \
     -m "$MEM" -smp 1 -no-reboot \
     -cdrom "$ISO" -boot d \
     -serial "file:$LOG" -display none -vga none \

@@ -54,6 +54,78 @@ jobs:
           path: build/out/iso/castalia-live-amd64.iso
           retention-days: 7
 
+  iso-classic32:
+    name: classic32 ISO — the 32-bit edition, built (Bible §18 P1, §4.1)
+    # §18 Phase 1's deliverable is "castalia-min ISO (classic32 + classic64)".
+    # classic32 has existed as a profile since the roadmap was written and had
+    # never been built, so nothing knew whether its package set even resolves
+    # on i386 — which is the question this answers, nightly, before somebody
+    # finds out during a release.
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Install ISO + boot toolchain
+        run: |
+          sh ci/apt-install.sh \
+            debootstrap squashfs-tools xorriso isolinux syslinux-common \
+            qemu-system-x86 python3
+
+      - name: Build the classic32 ISO
+        run: sudo sh build/mkiso.sh --edition classic32
+
+      - name: Boot it on a CPU that cannot run 64-bit code
+        # classic32 boots to runit + LightDM rather than to a serial getty,
+        # so the marker is what a graphical edition can honestly show over a
+        # serial line: the kernel reached userspace and init took over.
+        run: |
+          sh tests/qemu/boot-smoke.sh \
+            build/out/iso/castalia-classic32.iso \
+            --qemu qemu-system-i386 --cpu coreduo \
+            --mem 512 --timeout 420 \
+            --marker 'runit: enter stage|Castalia|castalia login:|systemd-udevd|Starting'
+
+      - name: Upload the ISO
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: castalia-classic32-iso
+          path: build/out/iso/castalia-classic32.iso
+          if-no-files-found: warn
+          retention-days: 7
+
+  iso-live-i386:
+    name: live-i386 ISO — build + FLOOR boot on a 32-bit CPU (§4.1, §16)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Install ISO + boot toolchain
+        run: |
+          sh ci/apt-install.sh \
+            debootstrap squashfs-tools xorriso isolinux syslinux-common \
+            qemu-system-x86 python3
+
+      - name: Build the live-i386 ISO
+        run: sudo sh build/mkiso.sh --edition live-i386
+
+      - name: Boot it on a CPU that cannot run 64-bit code
+        run: |
+          sh tests/qemu/boot-smoke.sh \
+            build/out/iso/castalia-live-i386.iso \
+            --qemu qemu-system-i386 --cpu coreduo --timeout 300
+
+      - name: Upload the ISO
+        uses: actions/upload-artifact@v7
+        with:
+          name: castalia-live-i386-iso
+          path: build/out/iso/castalia-live-i386.iso
+          retention-days: 7
+
   iso-desktop:
     name: live-desktop-amd64 ISO — build + desktop proof (Bible §18 P2)
     runs-on: ubuntu-latest

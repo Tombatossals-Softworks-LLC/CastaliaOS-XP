@@ -379,6 +379,41 @@ jobs:
           sh tests/qemu/boot-smoke.sh \
             build/out/iso/castalia-live-amd64.iso --timeout 300
 
+  iso-boot-i386:
+    name: 32-bit ISO build + QEMU boot (Bible §4.1, §16 FLOOR)
+    # The architecture the product's promise is actually about. §4.1 and §16
+    # both put the FLOOR at a Pentium 4, which is 32-bit, and until this job
+    # existed every ISO ever built was amd64 — so the arch that mattered was
+    # the one nothing proved. Its own job rather than a step in iso-boot, so
+    # the two architectures build in parallel and neither hides the other's
+    # failure.
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Install ISO + boot toolchain
+        run: |
+          sh ci/apt-install.sh \
+            debootstrap squashfs-tools xorriso isolinux syslinux-common \
+            qemu-system-x86 python3
+
+      - name: Build the live-i386 ISO
+        run: sudo sh build/mkiso.sh --edition live-i386
+
+      - name: Boot menu as shipped
+        run: sh tests/iso/menu-check.sh build/out/iso/castalia-live-i386.iso
+
+      - name: Boot it on a CPU that cannot run 64-bit code
+        # -cpu coreduo is 32-bit only, and the nearest model QEMU has to the
+        # §16 TARGET tier. qemu-system-x86_64 would boot this ISO happily,
+        # which is exactly why it cannot be what proves it.
+        run: |
+          sh tests/qemu/boot-smoke.sh \
+            build/out/iso/castalia-live-i386.iso \
+            --qemu qemu-system-i386 --cpu coreduo --timeout 300
+
   installer-endtoend:
     name: Installer end-to-end (install to disk + QEMU boot, Bible §14)
     runs-on: ubuntu-latest
