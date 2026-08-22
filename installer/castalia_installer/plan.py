@@ -61,6 +61,43 @@ done
 exit 0
 """
 
+#: Put the hardware probe where runit will find it, and run it once against
+#: the machine being installed onto (§6.15: "runs at install and first boot").
+#:
+#: Installing it means two things: the definition in /etc/sv, and a symlink
+#: from the runsvdir, which is what runit reads as "enabled at boot". The
+#: runsvdir is looked for in the order runit itself looks, because Debian and
+#: Void disagree about where it is, and getting it wrong means a service that
+#: is installed and never runs.
+#:
+#: The probe itself is then run ONCE, here, in the chroot — so the very first
+#: boot already has a report to show rather than an empty Hardware Center.
+#: --root / inside the chroot is the machine, not the live ISO: the chroot's
+#: /sys and /proc are bind-mounts of the real ones (the plan mounts them
+#: above), which is the same hardware the installed system will boot on.
+#:
+#: Fail-open throughout. Not knowing what is in the machine must never be
+#: what stops it being installed.
+HWPROBE_SH = f"""set -u
+src={GRUB_ASSETS.rsplit('/', 1)[0]}/services/castalia-hwprobe
+[ -d "$src" ] || exit 0
+mkdir -p /etc/sv/castalia-hwprobe/log || exit 0
+cp -a "$src/." /etc/sv/castalia-hwprobe/ 2>/dev/null || exit 0
+chmod 755 /etc/sv/castalia-hwprobe/run /etc/sv/castalia-hwprobe/log/run \
+    2>/dev/null || :
+for d in /etc/service /var/service /service /etc/runit/runsvdir/default; do
+    [ -d "$d" ] || continue
+    ln -sfn /etc/sv/castalia-hwprobe "$d/castalia-hwprobe" 2>/dev/null || :
+    break
+done
+command -v castalia-hwprobe >/dev/null 2>&1 || exit 0
+castalia-hwprobe --quirks /usr/share/castalia/hwprobe/quirks.json \
+    >/dev/null 2>&1 || \
+    echo "castalia: the hardware probe did not complete; the Hardware" \
+         "Center will read the machine live instead" >&2
+exit 0
+"""
+
 #: Rebuild the initrd so it carries the recovery console.
 #:
 #: This has to run in the chroot AFTER the recovery hook is in place and
@@ -516,6 +553,8 @@ def build_plan(
                ["sh", "-c", GRUB_SAFE_ENTRY_SH], chroot=True))
         s(Step("Bake the recovery console into the initrd (§18 P5)",
                ["sh", "-c", RECOVERY_INITRD_SH], chroot=True))
+        s(Step("Install and run the hardware probe (§6.15)",
+               ["sh", "-c", HWPROBE_SH], chroot=True))
         s(Step("Generate GRUB config",
                ["grub-mkconfig", "-o", "/boot/grub/grub.cfg"], chroot=True))
         # Make the installed system boot by root FS UUID, not the install-time

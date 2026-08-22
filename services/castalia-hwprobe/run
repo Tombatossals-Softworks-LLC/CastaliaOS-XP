@@ -1,0 +1,36 @@
+#!/bin/sh
+# runit service: the Castalia hardware probe (Bible §6.15, §18 Phase 1).
+#
+# A ONE-SHOT under a supervisor, which is worth explaining because runit's
+# whole job is to restart things that stop. hwprobe runs, writes
+# /var/lib/castalia/hwprobe, and is finished; there is no daemon here. Left
+# alone, runsv would see the script exit and start it again, forever — a
+# machine re-probing its own PCI bus in a loop.
+#
+# The runit idiom for this is: do the work, ask the supervisor to bring the
+# service down, and then wait to be killed. `sv down` is what makes runsv
+# stop restarting it; the sleep afterwards is only somewhere to be while that
+# happens, and is never expected to finish.
+#
+# It runs on every boot rather than only at install. Hardware changes — a card
+# is added, a disk is moved into another machine — and a report that was true
+# in 2026 and is presented as current is worse than no report at all.
+exec 2>&1
+
+SVNAME=$(basename "$(pwd)")
+QUIRKS=/usr/share/castalia/hwprobe/quirks.json
+
+echo "castalia-hwprobe: probing the machine"
+if [ -r "$QUIRKS" ]; then
+    python3 -m castalia_hwprobe --quirks "$QUIRKS" || \
+        echo "castalia-hwprobe: the probe failed; the Hardware Center will" \
+             "read the machine live instead"
+else
+    python3 -m castalia_hwprobe || \
+        echo "castalia-hwprobe: the probe failed; the Hardware Center will" \
+             "read the machine live instead"
+fi
+echo "castalia-hwprobe: done"
+
+sv down "$SVNAME" 2>/dev/null || :
+exec sleep 3600

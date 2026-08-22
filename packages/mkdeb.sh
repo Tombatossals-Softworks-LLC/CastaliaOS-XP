@@ -88,7 +88,8 @@ if [ "$DRY" -eq 1 ]; then
     log "PLAN assets: generated QSS + Openbox themercs -> $SHARE/build/out/themes"
     log "PLAN assets: Openbox themes -> /usr/share/themes/Castalia-<id>"
     log "PLAN assets: icons -> /usr/share/icons/Castalia/48x48/apps"
-    log "PLAN backends: installer + recovery Python -> $SHARE (+ /usr/bin launchers)"
+    log "PLAN backends: installer + recovery + hwprobe Python -> $SHARE (+ /usr/bin launchers)"
+    log "PLAN hwprobe: quirks.json -> $SHARE/hwprobe, runit service -> $SHARE/services"
     log "PLAN config: /etc/castalia/theme.conf (conffile, default human)"
     log "PLAN config: /etc/lightdm/lightdm-gtk-greeter.conf (conffile, Human dawn greeter)"
     log "PLAN control: Depends on Qt5 widgets/svg runtime + python3"
@@ -213,11 +214,18 @@ else
     log "cursors: skipped (no $CURSORS_OUT — run tools/cursor_gen.py)"
 fi
 
-# shared Python backends + their console launchers (§14.5, §9)
-mkdir -p "$STAGE$SHARE/installer" "$STAGE$SHARE/recovery"
+# shared Python backends + their console launchers (§14.5, §9, §6.15)
+mkdir -p "$STAGE$SHARE/installer" "$STAGE$SHARE/recovery" \
+         "$STAGE$SHARE/hwprobe"
 cp -a "$REPO/installer/castalia_installer" "$STAGE$SHARE/installer/"
 cp -a "$REPO/recovery/castalia_recovery" "$STAGE$SHARE/recovery/"
+cp -a "$REPO/hwprobe/castalia_hwprobe" "$STAGE$SHARE/hwprobe/"
 find "$STAGE$SHARE" -name __pycache__ -type d -exec rm -rf {} + 2>/dev/null || :
+# The quirks table ships as DATA next to the code that reads it, not baked
+# into it: §19's certification results correct this file, and a table that
+# needs a new package to fix a wrong entry is a table that stays wrong.
+install -Dm644 "$REPO/hwprobe/quirks.json" \
+    "$STAGE$SHARE/hwprobe/quirks.json"
 cat > "$STAGE/usr/bin/castalia-instalar-texto" <<'TX'
 #!/bin/sh
 export PYTHONPATH=/usr/share/castalia/installer
@@ -228,8 +236,23 @@ cat > "$STAGE/usr/bin/castalia-restore" <<'RS'
 export PYTHONPATH=/usr/share/castalia/recovery
 exec python3 -m castalia_recovery "$@"
 RS
+cat > "$STAGE/usr/bin/castalia-hwprobe" <<'HW'
+#!/bin/sh
+export PYTHONPATH=/usr/share/castalia/hwprobe
+exec python3 -m castalia_hwprobe "$@"
+HW
 chmod 755 "$STAGE/usr/bin/castalia-instalar-texto" \
-          "$STAGE/usr/bin/castalia-restore"
+          "$STAGE/usr/bin/castalia-restore" \
+          "$STAGE/usr/bin/castalia-hwprobe"
+
+# The runit service that runs it at every boot (§6.4, §6.15). Staged, not
+# enabled: enabling is the installer's job, because a .deb unpacked into a
+# chroot must not start probing the build host's PCI bus.
+for f in run log/run service.conf; do
+    install -Dm"$(case $f in *run) echo 755;; *) echo 644;; esac)" \
+        "$REPO/services/castalia-hwprobe/$f" \
+        "$STAGE$SHARE/services/castalia-hwprobe/$f"
+done
 
 # default system theme (admin-editable → conffile) — Castalia Human, the
 # warm flagship look (§8.2 addendum)

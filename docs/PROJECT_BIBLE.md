@@ -2032,6 +2032,22 @@ assume a very small team (1–3 people) and are deliberately conservative.
   yet) with kernel, Xorg, audio, wired net, runit, apt + Castalia repo skeleton.
 - **Deliverables:** `castalia-min` ISO (classic32 + classic64); signed repo;
   hwprobe v0.
+- **hwprobe v0 shipped** ✅ (`hwprobe/castalia_hwprobe`): reads PCI, CPU and
+  RAM out of sysfs/procfs — never `lspci`, so it runs on a FLOOR install with
+  no pciutils — matches a shipped quirks table (`quirks.json`, data rather
+  than code, because §19's certification results are what correct it), and
+  writes `/var/lib/castalia/hwprobe/report.json`. Run in the chroot at install
+  time so the first boot already has a report, and by a runit one-shot
+  (`services/castalia-hwprobe`) on every boot after. 28 tests probe sysfs
+  trees built on disk, including the FLOOR reference machine.
+
+  It records decisions and does not apply them: nothing writes an
+  `xorg.conf.d` snippet or a modprobe blacklist yet. And it claims nothing it
+  was not told — an unlisted machine gets `suspend: unknown`, never a guess. A
+  test asserts no shipped quirk claims `suspend: safe`, because no machine has
+  been certified yet, which makes the first such claim a deliberate edit
+  rather than a default. Remaining: the Hardware Center reading the report,
+  and applying quirks.
 - **Non-goals:** shell, apps, GUI installer (text install OK here).
 - **Acceptance:** boots + text-installs on FLOOR/TARGET; wired DHCP + audio work;
   apt installs from the Castalia repo.

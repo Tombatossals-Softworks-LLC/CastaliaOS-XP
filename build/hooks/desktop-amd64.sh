@@ -51,6 +51,22 @@ install -Dm755 recovery/boot/initramfs-hook \
 install -Dm755 recovery/boot/init-premount \
     /etc/initramfs-tools/scripts/init-premount/castalia-recovery
 
+echo "castalia-hook: staging the hardware probe (§6.15)"
+install -Dm644 hwprobe/quirks.json /usr/share/castalia/hwprobe/quirks.json
+cp -a hwprobe/castalia_hwprobe /usr/share/castalia/hwprobe/
+for f in run log/run service.conf; do
+    install -Dm644 "services/castalia-hwprobe/$f" \
+        "/usr/share/castalia/services/castalia-hwprobe/$f"
+done
+chmod 755 /usr/share/castalia/services/castalia-hwprobe/run \
+          /usr/share/castalia/services/castalia-hwprobe/log/run
+cat > /usr/bin/castalia-hwprobe <<'HW'
+#!/bin/sh
+export PYTHONPATH=/usr/share/castalia/hwprobe
+exec python3 -m castalia_hwprobe "$@"
+HW
+chmod 755 /usr/bin/castalia-hwprobe
+
 echo "castalia-hook: building the shell (target Qt, correct ABI)"
 cmake -S shell -B /tmp/shellbuild -DCMAKE_BUILD_TYPE=Release
 cmake --build /tmp/shellbuild -j"$(nproc)"

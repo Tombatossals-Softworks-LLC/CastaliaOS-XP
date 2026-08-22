@@ -3,7 +3,8 @@
 # gates CI runs, locally, in tiers:
 #
 #   lint    ruff over all Python tooling
-#   unit    unit tests: QA tooling, installer backend, Restore Points backend
+#   unit    unit tests: QA tooling, installer backend, Restore Points
+#           backend, hardware probe
 #   gates   design-system + legal + pipeline gates (theme-lint, provenance,
 #           theme/sound export smokes, mkiso/mkdeb/mkrepo/installer dry-runs,
 #           Restore Points snapshot smoke)
@@ -35,8 +36,8 @@ cd "$REPO"
 say()  { printf '\nrun[%s]: %s\n' "$1" "$2"; }
 
 tier_lint() {
-    say lint "ruff over tools/ installer/ recovery/"
-    ruff check tools installer recovery
+    say lint "ruff over tools/ installer/ recovery/ hwprobe/"
+    ruff check tools installer recovery hwprobe
 }
 
 tier_unit() {
@@ -46,6 +47,8 @@ tier_unit() {
     PYTHONPATH=installer python3 -m unittest discover -s installer/tests
     say unit "Restore Points backend (Bible §9/P8)"
     PYTHONPATH=recovery python3 -m unittest discover -s recovery/tests
+    say unit "hardware probe (Bible §6.15)"
+    PYTHONPATH=hwprobe python3 -m unittest discover -s hwprobe/tests
 }
 
 tier_gates() {
@@ -67,6 +70,11 @@ tier_gates() {
     say gates "package + repo dry-run (§13, §17.2)"
     sh packages/mkdeb.sh --dry-run > /dev/null && echo "  mkdeb: plan OK"
     sh build/mkrepo.sh --dry-run > /dev/null && echo "  mkrepo: plan OK"
+    say gates "hardware probe dry-run against this machine (§6.15)"
+    PYTHONPATH=hwprobe python3 -m castalia_hwprobe --dry-run \
+        --quirks hwprobe/quirks.json > /dev/null
+    echo "  castalia-hwprobe: probed OK"
+
     say gates "installer plan dry-run (§14)"
     PYTHONPATH=installer python3 -m castalia_installer \
         --disk /dev/sda --disk-size-mib 40960 --hostname pc-castalia \

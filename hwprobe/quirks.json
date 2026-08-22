@@ -1,0 +1,36 @@
+{
+  "_comment": [
+    "Castalia hardware quirks table (Bible §6.15, §19).",
+    "Every row here is something that was OBSERVED on a machine, not",
+    "something that was expected. §19's hardware certification is what",
+    "grows this file; a row added without a machine behind it is a",
+    "rumour with a version number.",
+    "",
+    "match:  vendor:device, or just vendor for a whole generation.",
+    "        A device-specific row wins over a vendor-wide one.",
+    "suspend: safe | unsafe | unknown. 'unknown' is the honest default",
+    "        and the Hardware Center shows it as one; a wrong 'safe' is",
+    "        a lost session and looks identical to a tested machine."
+  ],
+  "version": 1,
+  "quirks": [
+    {
+      "match": "1013",
+      "note": "Cirrus Logic: sin aceleración 3D utilizable; el escritorio funciona sin compositor (§4.4).",
+      "xorg_driver": "cirrus",
+      "suspend": "unknown"
+    },
+    {
+      "match": "1234:1111",
+      "note": "Tarjeta gráfica estándar de QEMU: es una máquina virtual, no hay suspensión real que probar.",
+      "xorg_driver": "modesetting",
+      "suspend": "unsafe"
+    },
+    {
+      "match": "15ad:0405",
+      "note": "VMware SVGA II: máquina virtual; suspensión gestionada por el anfitrión.",
+      "xorg_driver": "vmware",
+      "suspend": "unsafe"
+    }
+  ]
+}
