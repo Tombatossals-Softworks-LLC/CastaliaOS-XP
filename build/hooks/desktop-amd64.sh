@@ -15,6 +15,30 @@ SRC=/usr/src/castalia
 PREFIX=/opt/castalia
 SHARE=/usr/share/castalia
 
+# What this hook needs staged into the chroot. mkiso.sh copies whatever a
+# profile's SRC_DIRS names and nothing else, so a hook that reaches for a
+# directory the profile forgot dies deep inside a 90-minute ISO build with an
+# error about a missing path — which is how a release pipeline failed after
+# docs/ and hwprobe/ were added here and not there.
+#
+# Declaring it makes the requirement checkable: tools/tests/test_mkiso.py
+# reads this list and fails if any profile using this hook does not stage it.
+# Keep the marker line intact; the test parses it.
+#
+# castalia-hook-needs: shell apps iso themes branding services tools i18n installer recovery docs hwprobe VERSION
+HOOK_NEEDS="shell apps iso themes branding services tools i18n installer recovery docs hwprobe VERSION"
+
+cd "$SRC"
+missing=""
+for need in $HOOK_NEEDS; do
+    [ -e "$SRC/$need" ] || missing="$missing $need"
+done
+if [ -n "$missing" ]; then
+    echo "castalia-hook: FATAL — not staged into the chroot:$missing" >&2
+    echo "castalia-hook: add them to SRC_DIRS in the edition profile" >&2
+    exit 1
+fi
+
 echo "castalia-hook: installing build toolchain"
 apt-get install -y --no-install-recommends \
     build-essential cmake qtbase5-dev libqt5svg5-dev libxcb1-dev python3 \

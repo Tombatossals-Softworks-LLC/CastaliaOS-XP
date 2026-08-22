@@ -1,5 +1,6 @@
 """Tests for the ISO pipeline skeleton (build/mkiso.sh + profiles)."""
 
+import re
 import subprocess
 import unittest
 from pathlib import Path
@@ -90,6 +91,62 @@ class MkIsoTest(unittest.TestCase):
             self.assertEqual(
                 [ln for ln in i386.splitlines() if ln.startswith(key)],
                 [ln for ln in amd64.splitlines() if ln.startswith(key)], key)
+
+    def test_every_profile_stages_what_its_hook_needs(self):
+        """The bug that killed a release pipeline 90 minutes in.
+
+        mkiso.sh copies exactly what a profile's SRC_DIRS names. A hook that
+        reaches for a directory the profile forgot dies deep inside the ISO
+        build, after debootstrap and after the package install — which is
+        exactly where docs/ and hwprobe/ were added to the desktop hook and
+        not to the profiles that run it.
+
+        Each hook declares what it needs on a `castalia-hook-needs:` line.
+        This checks the profiles supply it, in a test that takes no seconds
+        rather than in a build that takes ninety minutes.
+        """
+        needs_line = re.compile(r"^#\s*castalia-hook-needs:\s*(?P<dirs>.+)$",
+                                re.MULTILINE)
+        checked = 0
+        for profile in sorted(PROFILES.glob("*.conf")):
+            text = profile.read_text(encoding="utf-8")
+            hook = re.search(r'^HOOK="([^"]+)"', text, re.MULTILINE)
+            if not hook:
+                continue
+            hook_path = REPO / hook.group(1)
+            self.assertTrue(hook_path.is_file(),
+                            f"{profile.name}: HOOK {hook.group(1)} missing")
+            declared = needs_line.search(
+                hook_path.read_text(encoding="utf-8"))
+            self.assertIsNotNone(
+                declared,
+                f"{hook.group(1)} has no 'castalia-hook-needs:' line, so no "
+                f"profile can be checked against it")
+            src_dirs = re.search(r'^SRC_DIRS="([^"]*)"', text, re.MULTILINE)
+            staged = set((src_dirs.group(1) if src_dirs else "").split())
+            missing = [d for d in declared.group("dirs").split()
+                       if d not in staged]
+            self.assertEqual(
+                missing, [],
+                f"{profile.name}: SRC_DIRS does not stage {missing}, which "
+                f"{hook.group(1)} needs — the ISO build would fail after "
+                f"debootstrap")
+            checked += 1
+        self.assertGreater(checked, 0, "no profile has a HOOK any more")
+
+    def test_a_hooks_declared_needs_are_real_directories(self):
+        # A typo in the declaration would make the check above pass while
+        # the build still fails.
+        for hook in sorted((REPO / "build" / "hooks").glob("*.sh")):
+            declared = re.search(r"^#\s*castalia-hook-needs:\s*(.+)$",
+                                 hook.read_text(encoding="utf-8"),
+                                 re.MULTILINE)
+            if not declared:
+                continue
+            for name in declared.group(1).split():
+                self.assertTrue((REPO / name).exists(),
+                                f"{hook.name} declares {name}, which is not "
+                                f"in the repository")
 
     def test_the_i386_boot_gate_uses_a_32_bit_only_emulator(self):
         # qemu-system-x86_64 boots a 32-bit kernel perfectly well, which is
