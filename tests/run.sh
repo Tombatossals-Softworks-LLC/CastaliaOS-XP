@@ -76,6 +76,11 @@ tier_gates() {
         --disk /dev/sda --disk-size-mib 40960 --hostname pc-castalia \
         --user dave --mode alongside --dry-run > /dev/null
     echo "  castalia-install: alongside plan OK"
+    PYTHONPATH=installer python3 -m castalia_installer \
+        --disk /dev/sda --disk-size-mib 204800 --hostname pc-castalia \
+        --user dave --mode shrink --dry-run \
+        --pretend-partition 1:1:204799:ntfs:40960 > /dev/null
+    echo "  castalia-install: shrink plan OK"
     say gates "Restore Points snapshot/restore smoke (§9/P8)"
     sh recovery/tests/snapshot-smoke.sh
 }

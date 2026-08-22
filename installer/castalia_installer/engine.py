@@ -23,6 +23,10 @@ class ConfirmationRequired(RuntimeError):
     """Raised when a destructive step is reached without confirmation."""
 
 
+class StepFailed(RuntimeError):
+    """A command in the plan failed. Carries what the command printed."""
+
+
 class Runner:
     """Side-effect boundary. Real installs use :class:`SubprocessRunner`."""
 
@@ -60,8 +64,18 @@ class SubprocessRunner(Runner):
     def run(self, argv: list[str], *, input_text: str | None = None) -> str:
         proc = subprocess.run(
             argv, input=input_text, capture_output=True, text=True,
-            check=True,
         )
+        if proc.returncode != 0:
+            # Output goes into the exception rather than being swallowed.
+            # Without this a failing step surfaces as a bare CalledProcessError
+            # and a traceback, and whatever parted or ntfsresize said about
+            # WHY — which is the only useful thing on the screen — is thrown
+            # away. Someone whose install just stopped halfway is owed the
+            # tool's own words.
+            detail = (proc.stderr or proc.stdout or "").strip()
+            raise StepFailed(
+                f"{' '.join(argv)} exited {proc.returncode}"
+                + (f":\n{detail}" if detail else ""))
         return proc.stdout.strip()
 
     def write_file(self, path: str, content: str, mode: int = 0o644) -> None:
@@ -133,7 +147,7 @@ def execute(
             argv = ["chroot", cfg.mount_root, *argv]
         # A step may consume a secret on stdin (e.g. the password fed to
         # chpasswd) so it never appears in argv, the plan text, or the log.
-        input_text = None
+        input_text = step.stdin_text
         if step.stdin_key:
             input_text = f"{cfg.username}:{secrets.get(step.stdin_key, '')}\n"
         runner.run(argv, input_text=input_text)

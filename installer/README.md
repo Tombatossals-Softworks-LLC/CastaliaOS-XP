@@ -10,19 +10,44 @@ A **Qt5 graphical installer** and an **ncurses text fallback**, both driving the
 |---|---|---|
 | `--mode whole-disk` (default) | Writes a fresh partition table over the target. Erases everything. | ✅ |
 | `--mode alongside` | Puts /boot, swap and / in **unallocated space**, leaves every existing partition exactly where it is, and does not replace the partition table. GRUB picks up the other OS through `os-prober` (see `iso/grub/README.md`). | ✅ |
-| shrink an existing partition to make room | — | ❌ not implemented; `alongside` is offered only when there is already free space |
+| `--mode shrink` | Takes space off an existing NTFS or ext2/3/4 filesystem **first**, then installs into the gap that opens. This is what makes "install next to Windows" true on a normal computer, where there is no free space to begin with. | ✅ |
 | manual partitioning | — | ❌ not implemented |
 
-`alongside` refuses itself rather than improvising: too small a gap, no room
-left in the msdos table for three more primaries, or a /boot that would land
-past the first 128 GiB (§6.2) each mean the mode is not offered at all.
+The modes are offered least-destructive-first, which matters because whatever
+is at the top is what most people pick: `alongside` when the disk already has
+a gap, `shrink` when it does not, `whole-disk` last.
 
-Proof it does what it says: `installer/tests/test_alongside.py` asserts the
-plan (no `mklabel`, nothing written outside the free region, the existing
-partition never named), and `installer/tests/alongside-smoke.sh` runs the real
-engine against a real loopback disk carrying a real filesystem full of data,
-and checksums it before and after. §23.7 #3 asks for "verified"; that is what
-verified looks like.
+Both refuse themselves rather than improvising. For `alongside`: too small a
+gap, no room left in the msdos table for three more primaries, or a /boot that
+would land past the first 128 GiB (§6.2). For `shrink`, additionally:
+
+- a filesystem there is no resizer for (anything but NTFS and ext2/3/4) —
+  refused by name, never attempted hopefully;
+- a filesystem whose used space could not be measured — an installer that
+  guesses how full a Windows is is an installer that eats one;
+- a shrink that would leave the neighbour with less than **4 GiB or 15% of
+  what is in it**, whichever is more. Windows stops working long before it is
+  literally full, and the person who agreed to make room did not agree to
+  that;
+- a mounted filesystem, or an NTFS volume that is dirty — which is what a
+  hibernated Windows and one left in Fast Startup look like.
+
+**The order inside a shrink is the whole safety property**: the filesystem is
+resized before the partition is, never the other way round. Reversed, the new
+partition boundary lands inside a filesystem that still believes it owns the
+space past it, and everything out there is gone with no error at the time.
+`test_shrink.py` asserts that ordering directly, for both resizers.
+
+Proof it does what it says, on real disks rather than only on paper:
+
+| Test | What it proves |
+|---|---|
+| `tests/test_alongside.py` | the alongside plan writes no `mklabel`, nothing outside the free region, and never names the existing partition — and `fstab` names only partitions the installer created |
+| `tests/test_shrink.py` | every refusal above, and that the filesystem shrinks before the partition |
+| `tests/alongside-smoke.sh` | the real engine against a real loopback disk with a real filesystem full of data, checksummed before and after |
+| `tests/shrink-smoke.sh` | the same, on a disk with **no free space at all**, against real NTFS, with a file deliberately placed out past where the new boundary falls — the byte a mis-ordered shrink destroys |
+
+§23.7 #3 asks for "verified"; that is what verified looks like.
 
 ## Contents
 
@@ -35,7 +60,7 @@ verified looks like.
 | `castalia_installer/tui.py` | ✅ | the text installer — the guaranteed fallback (§14.5 #5) |
 | `castalia_installer/__main__.py` | ✅ | CLI: `--dry-run`, `--copy-only`, `--confirm-erase DISK` |
 | `gui/` | ✅ | Qt5 wizard (`castalia-instalador`) driving the backend |
-| `tests/` | ✅ | 49 unit tests + the real-disk loopback smoke |
+| `tests/` | ✅ | 125 unit tests + three real-disk loopback smokes (install, alongside, shrink) |
 
 ## Try it
 

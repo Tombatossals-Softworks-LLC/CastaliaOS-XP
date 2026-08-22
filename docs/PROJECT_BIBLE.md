@@ -2086,10 +2086,22 @@ assume a very small team (1–3 people) and are deliberately conservative.
 - **Backend shipped** ✅: the shared, unit-tested Python install backend
   (`installer/castalia_installer`) — guided whole-disk layout (§14.3), a
   confirmation-gated engine (§14.5 #1), UUID fstab, GRUB + user in chroot. It
-  runs `--dry-run` (prints the plan), is covered by 38 unit tests, and is
+  runs `--dry-run` (prints the plan), is covered by 125 unit tests, and is
   proven on a **real block device** by the loopback smoke
-  (`installer/tests/loopback-smoke.sh`). Remaining: the Qt GUI + ncurses
-  front-ends, dual-boot detection, and the end-to-end QEMU install-and-boot.
+  (`installer/tests/loopback-smoke.sh`).
+- **Dual-boot shipped** ✅: existing partitions are detected (`probe.py`), the
+  modes are offered least-destructive-first, and both disk paths exist —
+  `--mode alongside` installs into unallocated space touching nothing, and
+  `--mode shrink` takes space off an existing NTFS or ext filesystem to make
+  the gap on a disk that has none. Each is proven on a real loopback disk with
+  checksums either side (`alongside-smoke.sh`, `shrink-smoke.sh`, the latter
+  against real NTFS with a file placed out past the new boundary), which is
+  the "verified" §23.7 #3 asks for. Remaining: manual partitioning, and GPT
+  (the msdos four-primary ceiling means a disk with two existing partitions
+  can host neither mode).
+- **Remaining Phase 5 work:** the ncurses front-end, the recovery boot
+  environment, and the end-to-end QEMU install-and-boot for the dual-boot
+  paths (whole-disk is covered).
 - **Goals:** Qt GUI installer + ncurses fallback (shared backend); dual-boot
   detection; Display Test; **Restore Points** engine + Recovery boot env + Safe
   Mode; Recovery Center MVP.

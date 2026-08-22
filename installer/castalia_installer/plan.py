@@ -16,10 +16,14 @@ from .model import (
     BOOT_MIB,
     FIRST_128_GIB_MIB,
     MODE_ALONGSIDE,
+    MODE_SHRINK,
     InstallConfig,
     Partition,
+    ShrinkPlan,
     partition_path,
 )
+
+MiB = 1024 * 1024
 
 # Where a Castalia system keeps its boot assets, staged there by
 # packages/mkdeb.sh and by the desktop ISO hook (see iso/grub/README.md).
@@ -77,12 +81,23 @@ class Step:
     write: tuple[str, Callable[[dict], str]] | None = None
     sensitive: bool = False  # redact args when logging (passwords)
     stdin_key: str | None = None  # feed a secret (by key) to this step's stdin
+    stdin_text: str | None = None  # feed fixed text to this step's stdin
 
     def describe(self) -> str:
         if self.write is not None:
             return f"write {self.write[0]}"
         assert self.argv is not None
-        shown = "<redacted>" if self.sensitive else " ".join(self.argv)
+        if self.sensitive:
+            shown = "<redacted>"
+        else:
+            # An inline `sh -c` script is many lines of shell. Printed as-is
+            # it swamps the plan it is one line of, so it is folded onto one
+            # line here — the plan is a table of contents, and the scripts
+            # themselves are constants in this file, under their own names.
+            shown = " ".join(
+                f"<{len(a.strip().splitlines())}-line shell script>"
+                if "\n" in a else a
+                for a in self.argv)
         prefix = "[in target] " if self.chroot else ""
         return prefix + shown
 
@@ -150,6 +165,120 @@ def build_alongside_layout(cfg: InstallConfig) -> list[Partition]:
     ]
 
 
+#: Refuse to resize a filesystem that is mounted. Both resizers check this
+#: themselves; this exists so the *reason* reaches the user as a sentence
+#: rather than as a tool's exit code, and so the plan says out loud that the
+#: check happens before anything is written.
+NOT_MOUNTED_SH = """set -u
+dev=$1
+if findmnt -S "$dev" >/dev/null 2>&1; then
+    echo "castalia-install: $dev is mounted; unmount it before resizing" >&2
+    exit 1
+fi
+exit 0
+"""
+
+
+def build_shrink_steps(shrink: ShrinkPlan) -> list[Step]:
+    """The steps that take space off an existing filesystem (§14.3, §14.5).
+
+    **The order of the last two is the entire safety property of this
+    feature.** The filesystem is shrunk first and the partition second. Do it
+    the other way round and the partition boundary lands in the middle of a
+    filesystem that still believes it owns the space beyond it; everything
+    past the new end is then unreadable, which is to say gone. There is no
+    recovery step for that and no warning before it — it simply works until
+    the day somebody opens a file that lived at the far end of the volume.
+
+    Everything before the shrink is there to make it refusable:
+
+    1. *not mounted* — a live filesystem cannot be resized coherently;
+    2. *check* — ``ntfsresize --info`` refuses a dirty volume, which is what a
+       hibernated Windows or one left in Fast Startup looks like. That refusal
+       is a feature: resizing under it would leave Windows resuming into a
+       disk that changed shape beneath it;
+    3. *rehearse* — ``--no-action`` does the whole computation and writes
+       nothing, so an impossible shrink fails here rather than halfway
+       through the real one.
+
+    The filesystem is given one megabyte less than the partition will have, so
+    the boundary is always outside it rather than exactly on it. Rounding in
+    the resizers is in units of clusters and blocks, not megabytes, and the
+    cushion means we never have to be right about which way they round.
+    """
+    part = shrink.partition
+    dev = part.path
+    tool = part.shrink_tool
+    fs_size_mib = shrink.new_size_mib - 1
+    steps = [
+        Step(f"Check {dev} is not mounted",
+             ["sh", "-c", NOT_MOUNTED_SH, "sh", dev]),
+    ]
+    if tool == "ntfsresize":
+        fs_bytes = str(fs_size_mib * MiB)
+        steps += [
+            # --info on a dirty volume exits non-zero and says so; that is
+            # the hibernation/Fast-Startup guard, and it must run first.
+            Step(f"Check the filesystem on {dev} (and refuse if it is dirty)",
+                 ["ntfsresize", "--info", "--force", dev]),
+            Step(f"Rehearse the shrink of {dev} (writes nothing)",
+                 ["ntfsresize", "--no-action", "--size", fs_bytes, dev]),
+            Step(f"Shrink the filesystem on {dev} to {fs_size_mib} MiB",
+                 ["ntfsresize", "--force", "--size", fs_bytes, dev],
+                 destructive=True),
+        ]
+    else:
+        steps += [
+            # -f because resize2fs refuses without a recent check, -p to fix
+            # what is safely fixable without asking. If it cannot, we stop.
+            Step(f"Check the filesystem on {dev}",
+                 ["e2fsck", "-f", "-p", dev]),
+            Step(f"Rehearse the shrink of {dev} (writes nothing)",
+                 ["resize2fs", "-P", dev]),
+            Step(f"Shrink the filesystem on {dev} to {fs_size_mib} MiB",
+                 ["resize2fs", dev, f"{fs_size_mib}M"], destructive=True),
+        ]
+    disk = _disk_of(dev)
+    steps += [
+        # sfdisk, not parted. `parted -s ... resizepart` looks like the
+        # obvious tool and cannot be used: shrinking raises "Shrinking a
+        # partition can cause data loss, are you sure?", and script mode
+        # answers that prompt NO and exits 1. There is no documented flag
+        # that changes it. The loopback smoke found this the only way it can
+        # be found — by running it on a disk.
+        #
+        # sfdisk -N edits one entry and nothing else, and giving it only a
+        # size leaves the start sector exactly where it was. That last part
+        # is the safety property: a partition that keeps its start cannot
+        # have moved onto anything, whatever else went wrong.
+        Step(f"Shrink partition {part.index} to {shrink.new_size_mib} MiB",
+             ["sfdisk", "--force", "-N", str(part.index), disk],
+             stdin_text=f"size={shrink.new_size_mib}MiB\n",
+             destructive=True),
+        Step("Re-read the partition table", ["partprobe", disk],
+             destructive=True),
+    ]
+    # Verify afterwards, not just before. A resizer that returned 0 having
+    # produced a filesystem that no longer checks is the failure this is for,
+    # and finding it now — while the user is still at the installer, before
+    # anything has been written into the freed space — is the difference
+    # between "we stopped" and "we told you months later".
+    verify = ([tool, "--info", "--force", dev] if tool == "ntfsresize"
+              else ["e2fsck", "-f", "-p", dev])
+    steps.append(
+        Step(f"Verify the shrunk filesystem on {dev} still checks out",
+             verify))
+    return steps
+
+
+def _disk_of(part_path: str) -> str:
+    """``/dev/sda1`` -> ``/dev/sda``; ``/dev/nvme0n1p2`` -> ``/dev/nvme0n1``."""
+    stripped = part_path.rstrip("0123456789")
+    if stripped.endswith("p") and stripped[:-1] and stripped[-2].isdigit():
+        return stripped[:-1]
+    return stripped
+
+
 def render_fstab(ctx: dict) -> str:
     """Produce /etc/fstab from probed UUIDs (ctx['uuids'][role])."""
     u = ctx["uuids"]
@@ -205,8 +334,8 @@ def render_default_grub(ctx: dict) -> str:
         "GRUB_THEME=/boot/grub/themes/castalia/theme.txt",
         "",
         "# §14.3: an OS that was already on this machine gets its own entry.",
-        "# This is the boot-menu half of dual-boot; guided install is still",
-        "# whole-disk only, so it cannot yet install *alongside* one.",
+        "# This is the boot-menu half of dual-boot; the disk half is",
+        "# --mode alongside and --mode shrink.",
         "GRUB_DISABLE_OS_PROBER=false",
         "",
     ])
@@ -240,7 +369,12 @@ def build_plan(
     exercise the genuine destructive path (partition/format/mount/copy/fstab)
     against a disk image on any machine.
     """
-    alongside = cfg.mode == MODE_ALONGSIDE
+    # A shrink install IS an alongside install, with one act before it: the
+    # neighbour gives up its tail and the gap that opens is the region the
+    # layout goes into. Everything after that point is identical, and it is
+    # identical on purpose — the property that matters ("nothing is written
+    # outside the free region") is one property, tested once, not two.
+    alongside = cfg.mode in (MODE_ALONGSIDE, MODE_SHRINK)
     parts = (build_alongside_layout(cfg) if alongside
              else build_layout(cfg, disk_size_mib))
     plan = Plan(cfg, parts)
@@ -254,6 +388,15 @@ def build_plan(
     rpart = partition_path(disk, root.index)
 
     s = plan.steps.append
+
+    # 0. Make the room, if that is what was asked for. This is the only part
+    # of any install that modifies a filesystem the user already had, so it
+    # is first, it is separable, and it verifies itself before the installer
+    # is allowed to write a single byte into what it freed.
+    if cfg.mode == MODE_SHRINK:
+        assert cfg.shrink is not None, "shrink mode without a shrink plan"
+        for step in build_shrink_steps(cfg.shrink):
+            s(step)
 
     # 1. Partition table + partitions (DESTRUCTIVE — gated in the engine).
     if not alongside:

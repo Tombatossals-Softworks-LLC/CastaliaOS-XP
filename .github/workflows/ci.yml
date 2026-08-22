@@ -334,7 +334,7 @@ jobs:
       - name: Install disk tooling
         run: |
           sh ci/apt-install.sh \
-            parted e2fsprogs rsync util-linux python3
+            parted e2fsprogs rsync util-linux python3 ntfs-3g
 
       - name: Real install to a loopback disk image
         run: |
@@ -346,6 +346,13 @@ jobs:
         # cannot be argued with: real partition, real data, checksummed
         # before and after a real install.
         run: sudo sh installer/tests/alongside-smoke.sh
+
+      - name: "Dual-boot: make room on a full disk without losing the data"
+        # The other half of §23.7 #3, and the more dangerous one. Alongside
+        # only helps a disk that already has a gap; this makes the gap. Real
+        # NTFS, a file placed out past where the new boundary will fall, and
+        # a checksum on both sides of the operation.
+        run: sudo sh installer/tests/shrink-smoke.sh
 
   iso-boot:
     name: Live ISO build + QEMU boot (Bible §18 Phase 1, §19.1)
