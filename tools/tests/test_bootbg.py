@@ -243,5 +243,104 @@ esac
         self.assertEqual(proc.stdout, "")
 
 
+class RecoveryGeneratorTest(SafeModeGeneratorTest):
+    """iso/grub/12_castalia_recovery, held to exactly the same standard.
+
+    Subclassing is the point rather than a shortcut: every failure path the
+    Safe Mode generator has to survive — no library, no kernel, no initrd, a
+    probe that fails, a library that exits — is re-run against this file.
+    Both are executables that grub-mkconfig runs under ``set -e`` and whose
+    stdout is pasted into grub.cfg, so a difference in robustness between
+    them would be an accident, not a decision.
+    """
+
+    GEN = REPO / "iso" / "grub" / "12_castalia_recovery"
+
+    def test_emits_a_well_formed_safe_mode_entry(self):
+        # The inherited happy-path test asserts Safe Mode's own kernel line.
+        # This entry has a different one.
+        self.kernel("6.1.0-9-amd64")
+        proc = self.run_gen()
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        out = proc.stdout
+        self.assertIn('--id castalia-recovery {', out)
+        self.assertIn("search --no-floppy --fs-uuid --set=root BOOT-UUID", out)
+        self.assertIn("linux /vmlinuz-6.1.0-9-amd64 root=UUID=ROOT-UUID ro "
+                      "nomodeset castalia.recovery=1", out)
+        self.assertIn("initrd /initrd.img-6.1.0-9-amd64", out)
+        self.assertEqual(out.count("{"), 1)
+        self.assertEqual(out.count("}"), 1)
+
+    def test_it_boots_the_same_initrd_as_the_normal_entry(self):
+        # There is no separate initrd-recovery.img, on purpose (see
+        # recovery/boot/init-premount). The recovery entry therefore has to
+        # name the ordinary initrd for the newest kernel — the same one
+        # 10_linux offers — or it is an entry that boots something that no
+        # longer exists after a kernel update.
+        self.kernel("6.1.0-9-amd64")
+        self.kernel("6.1.0-10-amd64")
+        out = self.run_gen().stdout
+        self.assertIn("initrd /initrd.img-6.1.0-10-amd64", out)
+        self.assertNotIn("initrd-recovery", out)
+
+    def test_it_does_not_ask_for_single_user_mode(self):
+        # The console runs inside the initramfs and never reaches a runlevel
+        # at all, so `single` would be a promise about a boot that does not
+        # happen.
+        self.kernel("6.1.0-9-amd64")
+        self.assertNotIn(" single", self.run_gen().stdout)
+
+
+class RecoveryAssetsAreShippedTest(unittest.TestCase):
+    """The recovery environment reaching an installed machine at all."""
+
+    def test_the_generator_is_shipped_and_executable(self):
+        gen = REPO / "iso" / "grub" / "12_castalia_recovery"
+        self.assertTrue(gen.is_file(), gen)
+        self.assertTrue(gen.stat().st_mode & 0o111, f"{gen} not executable")
+
+    def test_every_recovery_boot_file_is_executable(self):
+        # initramfs-tools only runs the executable files in its hook and
+        # script directories, and a non-executable console is a recovery
+        # entry that boots into nothing.
+        for name in ("castalia-recovery-console", "init-premount",
+                     "initramfs-hook"):
+            path = REPO / "recovery" / "boot" / name
+            self.assertTrue(path.is_file(), path)
+            self.assertTrue(path.stat().st_mode & 0o111, f"{path} not +x")
+
+    def test_the_deb_and_the_iso_hook_stage_the_same_files(self):
+        # Two ways to arrive at an installed Castalia; both must leave the
+        # recovery environment in place, or it exists on one of them only.
+        deb = (REPO / "packages" / "mkdeb.sh").read_text(encoding="utf-8")
+        hook = (REPO / "build" / "hooks" / "desktop-amd64.sh")            .read_text(encoding="utf-8")
+        for needle in ("12_castalia_recovery",
+                       "castalia-recovery-console",
+                       "initramfs-tools/hooks/castalia-recovery",
+                       "init-premount/castalia-recovery"):
+            self.assertIn(needle, deb, f"mkdeb.sh: {needle}")
+            self.assertIn(needle, hook, f"desktop-amd64.sh: {needle}")
+
+    def test_the_installer_bakes_the_console_in_before_writing_the_menu(self):
+        # The recovery menu entry points at an initrd that must already know
+        # how to honour castalia.recovery=1. Built the other way round, the
+        # first recovery boot after an install is an ordinary boot of the
+        # system the user is trying to recover.
+        sys.path.insert(0, str(REPO / "installer"))
+        from castalia_installer import model, plan  # noqa: PLC0415
+
+        cfg = model.InstallConfig(target_disk="/dev/sda", username="dave",
+                                  hostname="pc")
+        titles = [s.title for s in plan.build_plan(cfg, 40960).steps]
+        entries = next(i for i, t in enumerate(titles)
+                       if "recovery boot entries" in t)
+        initrd = next(i for i, t in enumerate(titles)
+                      if "recovery console into the initrd" in t)
+        menu = next(i for i, t in enumerate(titles)
+                    if t == "Generate GRUB config")
+        self.assertLess(entries, initrd)
+        self.assertLess(initrd, menu)
+
+
 if __name__ == "__main__":
     unittest.main()

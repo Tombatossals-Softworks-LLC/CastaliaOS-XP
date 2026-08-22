@@ -1,0 +1,66 @@
+#!/bin/sh
+# Castalia OS — the recovery boot entry (Bible §18 Phase 5), as a generator.
+#
+# Same kernel and same initrd as the normal entry, plus
+# `castalia.recovery=1`. That flag is read inside the initramfs by
+# recovery/boot/init-premount, which mounts the root itself and runs the
+# recovery console before the real system starts. There is no second initrd
+# to keep in step with kernel updates — see that file for why.
+#
+# Everything in the long comment at the top of 11_castalia_safe applies here
+# unchanged, and is not repeated: all the work happens in a subshell so no
+# failure of any kind can abort grub-mkconfig (which runs under `set -e`), and
+# nothing is printed until the entry is complete and has been checked, because
+# half a menuentry is an unparseable grub.cfg and a machine that does not come
+# up at all.
+#
+# The two CASTALIA_GRUB_* variables exist so this file is executed for real in
+# CI against a stub library and a fake /boot. Nothing in a booting system sets
+# them.
+
+BOOTDIR=${CASTALIA_GRUB_BOOTDIR:-/boot}
+LIB=${CASTALIA_GRUB_MKCONFIG_LIB:-/usr/share/grub/grub-mkconfig_lib}
+
+entry=$(
+    # shellcheck source=/dev/null
+    . "$LIB" || exit 1
+
+    probe=${grub_probe:-grub-probe}
+
+    kernel=$(ls -1 "$BOOTDIR"/vmlinuz-* 2>/dev/null | LC_ALL=C sort -V \
+             | tail -n 1)
+    [ -n "$kernel" ] && [ -r "$kernel" ] || exit 1
+    initrd="$BOOTDIR/initrd.img-${kernel##*/vmlinuz-}"
+    [ -r "$initrd" ] || exit 1
+
+    root_uuid=$("$probe" --target=fs_uuid / 2>/dev/null) || exit 1
+    [ -n "$root_uuid" ] || exit 1
+    boot_device=$("$probe" --target=device "$kernel" 2>/dev/null) || exit 1
+    [ -n "$boot_device" ] || exit 1
+
+    prepare=$(prepare_grub_to_access_device "$boot_device" 2>/dev/null \
+              | sed -e 's/^/    /') || exit 1
+    kernel_path=$(make_system_path_relative_to_its_root "$kernel" \
+                  2>/dev/null) || exit 1
+    initrd_path=$(make_system_path_relative_to_its_root "$initrd" \
+                  2>/dev/null) || exit 1
+    [ -n "$kernel_path" ] && [ -n "$initrd_path" ] || exit 1
+
+    # `ro` and `nomodeset`: the console is text, it must come up on a machine
+    # whose graphics driver is the reason the system stopped booting, and the
+    # console mounts the root itself when it wants to write to it. `single`
+    # is deliberately absent — we never reach a runlevel at all.
+    cat <<EOF
+menuentry "${GRUB_DISTRIBUTOR:-Castalia OS} — Recuperación (Recovery)" --id castalia-recovery {
+$prepare
+    linux $kernel_path root=UUID=$root_uuid ro nomodeset castalia.recovery=1
+    initrd $initrd_path
+}
+EOF
+) 2>/dev/null || exit 0
+
+case "$entry" in
+    "menuentry "*" --id castalia-recovery {"*"    linux "*" castalia.recovery=1"*"    initrd "*"}")
+        printf '%s\n' "$entry" ;;
+    *)  exit 0 ;;
+esac

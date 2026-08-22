@@ -1,0 +1,39 @@
+#!/bin/sh
+# castalia-recovery — initramfs-tools hook (Bible §18 P5).
+#
+# Installed as /etc/initramfs-tools/hooks/castalia-recovery. Its job is to put
+# the recovery console and the handful of tools it calls into the initrd. It
+# runs on every `update-initramfs`, so a kernel update carries the recovery
+# environment forward without anyone remembering to rebuild anything.
+#
+# Deliberately small. Everything copied here is unpacked into RAM on a machine
+# that may have 512 MB of it (§16), so the console is POSIX sh and the real
+# Restore Points engine is not copied in at all — it is run through chroot out
+# of the root filesystem that is already there.
+
+PREREQ=""
+prereqs() { echo "$PREREQ"; }
+case "${1:-}" in
+    prereqs) prereqs; exit 0 ;;
+esac
+
+. /usr/share/initramfs-tools/hook-functions
+
+# The console itself.
+if [ -x /usr/lib/castalia/recovery/castalia-recovery-console ]; then
+    copy_file script /usr/lib/castalia/recovery/castalia-recovery-console \
+        /sbin/castalia-recovery-console
+fi
+
+# What its actions need. chroot to run the installed castalia-restore in the
+# mounted system; fsck to check a disk that will not mount; blkid to turn a
+# root=UUID= into a device. Missing tools are skipped rather than fatal: an
+# initrd that fails to build is a machine with no initrd at all, which is a
+# far worse outcome than a recovery menu with one option that says it cannot.
+for tool in chroot fsck fsck.ext4 e2fsck blkid mount umount reboot sync; do
+    if command -v "$tool" >/dev/null 2>&1; then
+        copy_exec "$(command -v "$tool")" || :
+    fi
+done
+
+exit 0

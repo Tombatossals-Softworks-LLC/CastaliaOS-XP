@@ -1,0 +1,231 @@
+#!/bin/sh
+# castalia-recovery-console — the recovery environment's menu (Bible §18 P5).
+#
+# This runs INSIDE THE INITRAMFS, before the real system has started, which is
+# the only place from which a system that will not boot can be repaired. By
+# the time it is called the root filesystem has been mounted at $ROOTDIR by
+# the init-premount script that calls it — or has failed to mount, which is
+# itself one of the things this menu exists to deal with.
+#
+# It is POSIX sh with no dependencies beyond what a Debian initramfs already
+# carries, and that is a deliberate constraint rather than an aesthetic one:
+# every megabyte here is unpacked into RAM on a 512 MB FLOOR machine, and a
+# recovery tool that cannot run on the machine it is recovering is not a
+# recovery tool. The Restore Points logic is NOT reimplemented here — the
+# tested `castalia-restore` is run inside the mounted root through chroot, so
+# there is exactly one implementation of "restore a point" in the product.
+#
+# Testable without a reboot. The three CASTALIA_RECOVERY_* variables below are
+# what the test harness sets; nothing in a booting system sets them, and the
+# defaults are the real ones.
+#
+#   CASTALIA_RECOVERY_ROOT     where the root filesystem is mounted
+#   CASTALIA_RECOVERY_DEVICE   the block device it came from (for fsck)
+#   CASTALIA_RECOVERY_DRYRUN   1 = print what would run, run nothing
+#
+# Menu choices are read from stdin, so a test drives it by piping them.
+
+set -u
+
+ROOTDIR=${CASTALIA_RECOVERY_ROOT:-/castalia-root}
+ROOTDEV=${CASTALIA_RECOVERY_DEVICE:-}
+DRYRUN=${CASTALIA_RECOVERY_DRYRUN:-0}
+
+say()  { printf '%s\n' "$*"; }
+warn() { printf '%s\n' "$*" >&2; }
+
+# Every command that changes anything goes through here, so --dry-run is a
+# property of the console rather than something each action remembers to do.
+do_run() {
+    if [ "$DRYRUN" = "1" ]; then
+        say "    \$ $*"
+        return 0
+    fi
+    "$@"
+}
+
+# Is there a system in there at all? Used to say "this is broken" rather than
+# offering repairs that cannot work.
+have_root() {
+    [ -n "$ROOTDIR" ] && [ -d "$ROOTDIR" ] && [ -d "$ROOTDIR/etc" ]
+}
+
+have_restore_tool() {
+    have_root && [ -d "$ROOTDIR/usr/lib/castalia/recovery" ]
+}
+
+banner() {
+    say ""
+    say "  ┌──────────────────────────────────────────────────────┐"
+    say "  │   Castalia OS — Entorno de recuperación               │"
+    say "  └──────────────────────────────────────────────────────┘"
+    if have_root; then
+        say "  Sistema encontrado en: $ROOTDIR (${ROOTDEV:-dispositivo desconocido})"
+    else
+        say "  AVISO: no se ha podido montar el sistema instalado."
+        say "         Aún puedes revisar el disco (opción 2) o abrir"
+        say "         una consola (opción 4)."
+    fi
+    say ""
+}
+
+menu() {
+    say "  1) Restaurar un punto de restauración"
+    say "  2) Comprobar y reparar el disco"
+    say "  3) Reparar el menú de arranque"
+    say "  4) Abrir una consola"
+    say "  5) Reiniciar"
+    say ""
+    printf '  Elige una opción [1-5]: '
+}
+
+# --- 1. restore ------------------------------------------------------------
+# Runs the real castalia-restore inside the mounted system. Nothing about
+# Restore Points is reimplemented here; if this is a different implementation
+# from the one that took the snapshot, one of them is wrong and nobody knows
+# which until the day it matters.
+in_target() {
+    do_run chroot "$ROOTDIR" "$@"
+}
+
+action_restore() {
+    if ! have_restore_tool; then
+        warn "  No hay puntos de restauración accesibles: el sistema"
+        warn "  instalado no está montado o no tiene el motor de"
+        warn "  recuperación instalado."
+        return 1
+    fi
+    say ""
+    say "  Puntos de restauración disponibles:"
+    in_target /usr/bin/castalia-restore list || {
+        warn "  No se ha podido leer la lista de puntos."
+        return 1
+    }
+    say ""
+    printf '  Escribe el ID a restaurar (o Enter para volver): '
+    read -r point || return 1
+    [ -n "$point" ] || return 0
+    say ""
+    say "  Se va a restaurar el sistema al punto $point."
+    say "  Tus archivos personales (/home) NO se tocan."
+    printf '  Escribe SI para confirmar: '
+    read -r answer || return 1
+    if [ "$answer" != "SI" ]; then
+        say "  Cancelado. No se ha cambiado nada."
+        return 0
+    fi
+    # --confirm is the engine's own gate (§14.5 #1 in spirit): the typed
+    # confirmation above is the human one, and the flag is what makes the
+    # tool act on it. Both, always.
+    if in_target /usr/bin/castalia-restore restore "$point" --confirm; then
+        say "  Restaurado. Reinicia para arrancar el sistema recuperado."
+        return 0
+    fi
+    warn "  La restauración ha fallado. El sistema NO se ha modificado a medias:"
+    warn "  castalia-restore toma un punto pre-restauración antes de empezar."
+    return 1
+}
+
+# --- 2. fsck ---------------------------------------------------------------
+# The filesystem must be UNMOUNTED for this to be safe, so it is unmounted,
+# checked, and mounted again. Checking a mounted filesystem is how a disk
+# that had one recoverable error acquires several that are not.
+action_fsck() {
+    if [ -z "$ROOTDEV" ]; then
+        warn "  No se sabe qué dispositivo comprobar."
+        return 1
+    fi
+    say ""
+    if have_root; then
+        say "  Desmontando $ROOTDIR antes de comprobar (obligatorio)..."
+        if ! do_run umount "$ROOTDIR"; then
+            warn "  No se ha podido desmontar. No se comprueba un sistema"
+            warn "  de archivos montado: eso empeora los errores."
+            return 1
+        fi
+    fi
+    say "  Comprobando $ROOTDEV..."
+    do_run fsck -y "$ROOTDEV"
+    rc=$?
+    # fsck's exit code is a bitmask: 1 = errors corrected, 2 = corrected and
+    # a reboot is needed. Neither is a failure, and reporting them as one
+    # would send someone looking for a problem that was just fixed.
+    case "$rc" in
+        0) say "  Sin errores." ;;
+        1) say "  Se han corregido errores." ;;
+        2) say "  Se han corregido errores (conviene reiniciar)." ;;
+        *) warn "  fsck ha terminado con código $rc: quedan errores que no"
+           warn "  se pueden corregir automáticamente." ;;
+    esac
+    say "  Volviendo a montar..."
+    do_run mount "$ROOTDEV" "$ROOTDIR" || warn "  No se ha podido remontar."
+    return 0
+}
+
+# --- 3. boot repair --------------------------------------------------------
+action_grub() {
+    if ! have_root; then
+        warn "  El sistema instalado no está montado; no se puede reparar"
+        warn "  su menú de arranque desde aquí."
+        return 1
+    fi
+    disk=${ROOTDEV%%[0-9]*}
+    case "$ROOTDEV" in
+        *p[0-9]*) disk=${ROOTDEV%p[0-9]*} ;;
+    esac
+    say ""
+    say "  Reinstalando GRUB en $disk y regenerando el menú..."
+    for d in dev dev/pts proc sys; do
+        do_run mount --rbind "/$d" "$ROOTDIR/$d" 2>/dev/null || :
+    done
+    ok=0
+    in_target grub-install --target=i386-pc --recheck "$disk" || ok=1
+    in_target update-grub || ok=1
+    for d in sys proc dev/pts dev; do
+        do_run umount -lf "$ROOTDIR/$d" 2>/dev/null || :
+    done
+    if [ "$ok" = 0 ]; then
+        say "  Menú de arranque reparado."
+        return 0
+    fi
+    warn "  No se ha podido reparar el menú de arranque."
+    return 1
+}
+
+# --- 4/5 -------------------------------------------------------------------
+action_shell() {
+    say ""
+    say "  Consola de recuperación. El sistema está en $ROOTDIR."
+    say "  Escribe 'exit' para volver al menú."
+    if [ "$DRYRUN" = "1" ]; then
+        say "    \$ sh -i"
+        return 0
+    fi
+    sh -i || :
+}
+
+action_reboot() {
+    say "  Reiniciando..."
+    do_run sync
+    do_run reboot -f
+}
+
+main() {
+    banner
+    while :; do
+        menu
+        read -r choice || { say ""; return 0; }
+        case "$choice" in
+            1) action_restore || : ;;
+            2) action_fsck    || : ;;
+            3) action_grub    || : ;;
+            4) action_shell   || : ;;
+            5) action_reboot; return 0 ;;
+            "") ;;
+            *) warn "  Opción no reconocida: $choice" ;;
+        esac
+        say ""
+    done
+}
+
+main "$@"

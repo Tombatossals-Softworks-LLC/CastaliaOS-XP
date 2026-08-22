@@ -2081,8 +2081,27 @@ assume a very small team (1–3 people) and are deliberately conservative.
   the system, restore, and verify (edit reverted, deleted file back, bad file
   gone, exec bit kept, unchanged files hardlink-shared). Restoring auto-takes a
   `pre-restore` point first, so a restore is itself reversible. Surfaced in the
-  Control Center → Recuperación. Remaining: the recovery boot env + a
-  from-recovery restore UI.
+  Control Center → Recuperación.
+- **Recovery boot environment shipped** ✅: a "Recuperación" entry in the GRUB
+  menu (`iso/grub/12_castalia_recovery`) boots the ordinary kernel with
+  `castalia.recovery=1`, which an initramfs-tools **init-premount** script
+  (`recovery/boot/init-premount`) picks up. It mounts the root itself and runs
+  a POSIX-sh console offering: restore a point, check and repair the disk,
+  repair the boot menu, a shell, and reboot. 24 tests execute the console for
+  real and assert the commands it would run; the QEMU install-and-boot test
+  checks the recovery entry is in the generated menu **and** that the console
+  is actually inside the initrd that entry boots.
+
+  Two decisions worth recording. It runs at *init-premount*, before
+  initramfs-tools mounts the root, because "the root will not mount" is the
+  case a recovery environment exists for and init-bottom never runs in it. And
+  there is **no separate `initrd-recovery.img`**, which the Phase 5
+  deliverables list asks for: a second image has to be rebuilt on every kernel
+  update or it rots into one that cannot boot the kernel it sits next to, it
+  doubles what a 1 GiB /boot must hold, and it is a second code path exercised
+  only in the emergency. The same initrd, gated on a kernel argument, is the
+  capability that was promised. Remaining: a graphical Recovery Center, and
+  the deliberately-broken-update drill of §23.7 #4 run end to end.
 - **Backend shipped** ✅: the shared, unit-tested Python install backend
   (`installer/castalia_installer`) — guided whole-disk layout (§14.3), a
   confirmation-gated engine (§14.5 #1), UUID fstab, GRUB + user in chroot. It
@@ -2105,7 +2124,9 @@ assume a very small team (1–3 people) and are deliberately conservative.
 - **Goals:** Qt GUI installer + ncurses fallback (shared backend); dual-boot
   detection; Display Test; **Restore Points** engine + Recovery boot env + Safe
   Mode; Recovery Center MVP.
-- **Deliverables:** graphical + text install; recovery initramfs; Restore Points.
+- **Deliverables:** graphical + text install; recovery boot environment
+  (delivered as a gated path inside the ordinary initramfs, not a second
+  image — see above); Restore Points.
 - **Non-goals:** migration assistant polish; scheduled backups.
 - **Acceptance:** clean install on FLOOR/TARGET; dual-boot preserves Windows;
   a broken update is recoverable via Restore Point in the recovery env.

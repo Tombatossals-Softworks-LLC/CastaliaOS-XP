@@ -101,7 +101,8 @@ class PlanShape(unittest.TestCase):
         gen = titles.index("Generate GRUB config")
         for title in ("Write the Castalia GRUB settings (boot identity, §6.2)",
                       "Install the Castalia GRUB theme",
-                      "Install the Safe Mode boot entry (§6.2)"):
+                      "Install the Safe Mode and recovery boot entries (§6.2)",
+                      "Bake the recovery console into the initrd (§18 P5)"):
             self.assertIn(title, titles, title)
             self.assertLess(titles.index(title), gen, title)
 
@@ -130,7 +131,7 @@ class PlanShape(unittest.TestCase):
         # install, so both scripts end in an unconditional exit 0 and run in
         # the chroot, where /usr/share/castalia is the target's copy.
         for title in ("Install the Castalia GRUB theme",
-                      "Install the Safe Mode boot entry (§6.2)"):
+                      "Install the Safe Mode and recovery boot entries (§6.2)"):
             step = next(s for s in self.plan.steps if s.title == title)
             self.assertTrue(step.chroot, title)
             self.assertFalse(step.destructive, title)
@@ -138,6 +139,15 @@ class PlanShape(unittest.TestCase):
             self.assertEqual(step.argv[:2], ["sh", "-c"], title)
             self.assertTrue(script.rstrip().endswith("exit 0"), title)
             self.assertIn("/usr/share/castalia/grub", script, title)
+        # The initrd rebuild is the same shape but names no asset path: it
+        # runs the target's own update-initramfs. Fail-open matters more
+        # here than anywhere — a target without initramfs-tools must still
+        # finish installing, just without a recovery console.
+        step = next(s for s in self.plan.steps
+                    if s.title.startswith("Bake the recovery console"))
+        self.assertTrue(step.chroot)
+        self.assertFalse(step.destructive)
+        self.assertTrue(step.argv[-1].rstrip().endswith("exit 0"))
 
     def test_creates_the_user_in_chroot(self):
         useradd = [s for s in self.plan.steps

@@ -1,0 +1,86 @@
+#!/bin/sh
+# castalia-recovery — initramfs-tools init-premount script (Bible §18 P5).
+#
+# Installed as /etc/initramfs-tools/scripts/init-premount/castalia-recovery by
+# the .deb, and baked into every initrd from then on. It does nothing at all
+# unless `castalia.recovery=1` is on the kernel command line, which only the
+# GRUB entry from iso/grub/12_castalia_recovery ever puts there.
+#
+# WHY init-premount, and not the more obvious init-bottom: init-bottom runs
+# after initramfs-tools has already mounted the real root, and if that mount
+# fails, initramfs-tools drops to its own bare emergency shell and never
+# reaches init-bottom at all. "The root filesystem will not mount" is the
+# central case a recovery environment exists for, so the recovery console has
+# to run BEFORE that, mount the root itself, and be the thing that handles the
+# failure. That is init-premount.
+#
+# WHY there is no second initrd. The deliverable in §18 Phase 5 is a "recovery
+# initramfs", and the obvious reading is a separate initrd-recovery.img. This
+# is the same initrd, gated on a kernel argument, and that is a better answer
+# for three reasons: a separate image has to be rebuilt on every kernel update
+# or it silently rots into an image that cannot boot the kernel it is offered
+# next to; it doubles what /boot has to hold on a machine where /boot is
+# 1 GiB; and it is a second code path that is exercised only in the emergency,
+# which is the worst possible place to find out it drifted. The capability is
+# what was promised; a second file was not.
+#
+# This script must never be able to break a normal boot. It exits 0 on every
+# path that is not an explicit recovery request, and it is `set -e`-free on
+# purpose: initramfs-tools sources these, and a hard exit here is a machine
+# that stops during boot.
+
+PREREQ=""
+prereqs() { echo "$PREREQ"; }
+case "${1:-}" in
+    prereqs) prereqs; exit 0 ;;
+esac
+
+# Only when asked. Reading /proc/cmdline word by word rather than grepping the
+# whole line: a substring match would also fire on `castalia.recovery=0` and
+# on somebody else's parameter that happens to contain the text.
+_castalia_recovery=0
+for _word in $(cat /proc/cmdline 2>/dev/null); do
+    case "$_word" in
+        castalia.recovery=1) _castalia_recovery=1 ;;
+    esac
+done
+[ "$_castalia_recovery" = 1 ] || exit 0
+
+[ -e /scripts/functions ] && . /scripts/functions
+
+CONSOLE=/sbin/castalia-recovery-console
+[ -x "$CONSOLE" ] || exit 0
+
+ROOTDIR=/castalia-root
+mkdir -p "$ROOTDIR"
+
+# What the kernel was told to boot. initramfs-tools has already parsed root=
+# into $ROOT; it may still be a UUID= or LABEL= form, which mount cannot use.
+_dev=${ROOT:-}
+case "$_dev" in
+    UUID=*|LABEL=*|PARTUUID=*)
+        if command -v blkid >/dev/null 2>&1; then
+            _resolved=$(blkid -t "$_dev" -o device 2>/dev/null | head -n 1)
+            [ -n "$_resolved" ] && _dev=$_resolved
+        fi
+        ;;
+esac
+
+# Read-write, because restoring a point and repairing GRUB both need to write.
+# A recovery environment that can only look is not one. If it will not mount,
+# the console says so and offers the disk check — that is the whole point of
+# doing the mount here rather than letting initramfs-tools fail first.
+if [ -n "$_dev" ] && [ -b "$_dev" ]; then
+    mount "$_dev" "$ROOTDIR" 2>/dev/null || :
+fi
+
+CASTALIA_RECOVERY_ROOT="$ROOTDIR" \
+CASTALIA_RECOVERY_DEVICE="$_dev" \
+    "$CONSOLE" </dev/console >/dev/console 2>&1
+
+# The console only returns after "reiniciar", and reboot -f does not come
+# back. Reaching here means something unusual happened; unmount what we
+# mounted so the normal boot that follows starts from a clean state rather
+# than from a filesystem this script left mounted somewhere odd.
+umount "$ROOTDIR" 2>/dev/null || :
+exit 0

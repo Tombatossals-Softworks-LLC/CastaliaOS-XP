@@ -49,11 +49,39 @@ grub-mkfont -s 20 -o "$dst/dejavu_20b.pf2" "$ttf/DejaVuSans-Bold.ttf" 2>/dev/nul
 exit 0
 """
 
-#: Put the Safe Mode generator where grub-mkconfig will run it.
+#: Put the Safe Mode and recovery generators where grub-mkconfig will run
+#: them. Fail-open, like everything else in the boot-assets phase: a missing
+#: generator must never turn a successful install into a failed one.
 GRUB_SAFE_ENTRY_SH = f"""set -u
-src={GRUB_ASSETS}/11_castalia_safe
-[ -f "$src" ] || exit 0
-install -Dm755 "$src" /etc/grub.d/11_castalia_safe 2>/dev/null || :
+for gen in 11_castalia_safe 12_castalia_recovery; do
+    src={GRUB_ASSETS}/$gen
+    [ -f "$src" ] || continue
+    install -Dm755 "$src" "/etc/grub.d/$gen" 2>/dev/null || :
+done
+exit 0
+"""
+
+#: Rebuild the initrd so it carries the recovery console.
+#:
+#: This has to run in the chroot AFTER the recovery hook is in place and
+#: BEFORE grub-mkconfig, because the recovery menu entry points at an initrd
+#: that has to already be able to honour castalia.recovery=1. An entry that
+#: boots an initrd without the console in it is a recovery option that drops
+#: the user into a normal boot of the system they are trying to recover.
+#:
+#: Fail-open, but loudly: if update-initramfs is not there (a target that is
+#: not initramfs-tools based), the recovery entry will simply do nothing, and
+#: that is better than refusing to finish an install over it.
+RECOVERY_INITRD_SH = """set -u
+command -v update-initramfs >/dev/null 2>&1 || {
+    echo "castalia: no update-initramfs; recovery console not baked in" >&2
+    exit 0
+}
+[ -x /etc/initramfs-tools/hooks/castalia-recovery ] || {
+    echo "castalia: recovery hook missing; skipping initrd rebuild" >&2
+    exit 0
+}
+update-initramfs -u -k all || update-initramfs -u || :
 exit 0
 """
 
@@ -484,8 +512,10 @@ def build_plan(
         # successful install into a failed one.
         s(Step("Install the Castalia GRUB theme",
                ["sh", "-c", GRUB_THEME_SH], chroot=True))
-        s(Step("Install the Safe Mode boot entry (§6.2)",
+        s(Step("Install the Safe Mode and recovery boot entries (§6.2)",
                ["sh", "-c", GRUB_SAFE_ENTRY_SH], chroot=True))
+        s(Step("Bake the recovery console into the initrd (§18 P5)",
+               ["sh", "-c", RECOVERY_INITRD_SH], chroot=True))
         s(Step("Generate GRUB config",
                ["grub-mkconfig", "-o", "/boot/grub/grub.cfg"], chroot=True))
         # Make the installed system boot by root FS UUID, not the install-time

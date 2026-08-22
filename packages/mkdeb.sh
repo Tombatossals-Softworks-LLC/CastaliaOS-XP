@@ -168,6 +168,20 @@ install -Dm644 "$REPO/iso/boot-bg/splash.png" \
     "$STAGE$SHARE/grub/theme/splash.png"
 install -Dm755 "$REPO/iso/grub/11_castalia_safe" \
     "$STAGE$SHARE/grub/11_castalia_safe"
+install -Dm755 "$REPO/iso/grub/12_castalia_recovery" \
+    "$STAGE$SHARE/grub/12_castalia_recovery"
+
+# The recovery boot environment (Bible §18 Phase 5). The console goes to a
+# fixed path because the initramfs hook copies it from there by name; the
+# hook and the init-premount script go straight into initramfs-tools' own
+# directories, so `update-initramfs` picks them up on the next kernel update
+# without anything having to remember to run.
+install -Dm755 "$REPO/recovery/boot/castalia-recovery-console" \
+    "$STAGE/usr/lib/castalia/recovery/castalia-recovery-console"
+install -Dm755 "$REPO/recovery/boot/initramfs-hook" \
+    "$STAGE/etc/initramfs-tools/hooks/castalia-recovery"
+install -Dm755 "$REPO/recovery/boot/init-premount" \
+    "$STAGE/etc/initramfs-tools/scripts/init-premount/castalia-recovery"
 
 # Openbox decorations per theme + the icon family
 for tdir in "$THEMES_OUT"/*/; do

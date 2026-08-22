@@ -83,6 +83,18 @@ install -Dm644 "$REPO_ROOT/iso/boot-bg/splash.png" \
     "$SRC_CACHE/usr/share/castalia/grub/theme/splash.png"
 install -Dm755 "$REPO_ROOT/iso/grub/11_castalia_safe" \
     "$SRC_CACHE/usr/share/castalia/grub/11_castalia_safe"
+install -Dm755 "$REPO_ROOT/iso/grub/12_castalia_recovery" \
+    "$SRC_CACHE/usr/share/castalia/grub/12_castalia_recovery"
+# The recovery boot environment (§18 P5). These go where the .deb puts them,
+# so the installer's initrd-rebuild step runs the REAL initramfs-tools over
+# the REAL hook — which is the only way to find out that the console actually
+# lands inside the initrd rather than that the step exited 0.
+install -Dm755 "$REPO_ROOT/recovery/boot/castalia-recovery-console" \
+    "$SRC_CACHE/usr/lib/castalia/recovery/castalia-recovery-console"
+install -Dm755 "$REPO_ROOT/recovery/boot/initramfs-hook" \
+    "$SRC_CACHE/etc/initramfs-tools/hooks/castalia-recovery"
+install -Dm755 "$REPO_ROOT/recovery/boot/init-premount" \
+    "$SRC_CACHE/etc/initramfs-tools/scripts/init-premount/castalia-recovery"
 
 # ---- 2. a blank target disk -------------------------------------------------
 echo "qemu-install: creating an 8.6 GiB target disk image"
@@ -111,7 +123,8 @@ mount "${LOOP}p1" "$MNT/boot"
 GRUB_CFG="$MNT/boot/grub/grub.cfg"
 [ -s "$GRUB_CFG" ] || { echo "qemu-install: FAIL — no grub.cfg on the target" >&2
                         exit 1; }
-for needle in "Castalia OS" "--id castalia-safe" "castalia.safemode=1"; do
+for needle in "Castalia OS" "--id castalia-safe" "castalia.safemode=1" \
+              "--id castalia-recovery" "castalia.recovery=1"; do
     grep -q -- "$needle" "$GRUB_CFG" || {
         echo "qemu-install: FAIL — generated menu is missing: $needle" >&2
         grep -c menuentry "$GRUB_CFG" >&2 || :
@@ -123,6 +136,26 @@ grep -q "console=ttyS0" "$GRUB_CFG" || {
     echo "qemu-install: FAIL — the source image's kernel cmdline was lost" >&2
     exit 1; }
 echo "qemu-install: menu OK — Castalia entries present, source settings kept"
+
+# The recovery entry boots the ordinary initrd with castalia.recovery=1, so
+# that initrd has to contain the console. An entry that offers recovery and
+# then performs an ordinary boot of the broken system is worse than no entry:
+# it is a promise kept badly, at the moment somebody is relying on it.
+echo "qemu-install: checking the recovery console is inside the initrd"
+INITRD=$(ls -1 "$MNT/boot"/initrd.img-* 2>/dev/null | LC_ALL=C sort -V \
+         | tail -n 1)
+if [ -n "$INITRD" ] && command -v lsinitramfs >/dev/null 2>&1; then
+    if lsinitramfs "$INITRD" 2>/dev/null \
+       | grep -q "castalia-recovery-console"; then
+        echo "qemu-install: recovery console found in $(basename "$INITRD")"
+    else
+        echo "qemu-install: FAIL — the recovery entry boots an initrd with" >&2
+        echo "              no recovery console in it" >&2
+        exit 1
+    fi
+else
+    echo "qemu-install: NOTE — no lsinitramfs here; initrd contents unchecked"
+fi
 umount -lf "$MNT/boot"; umount -lf "$MNT"
 sync
 losetup -d "$LOOP"; LOOP=""

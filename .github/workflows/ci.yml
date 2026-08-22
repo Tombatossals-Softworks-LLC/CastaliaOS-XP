@@ -391,7 +391,7 @@ jobs:
         run: |
           sh ci/apt-install.sh \
             debootstrap parted e2fsprogs rsync util-linux \
-            qemu-system-x86 python3
+            qemu-system-x86 python3 initramfs-tools-core
 
       - name: Install to a disk with castalia-install, then boot it
         run: |

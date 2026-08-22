@@ -41,6 +41,15 @@ echo "castalia-hook: staging the GRUB boot identity (§6.2)"
 install -Dm644 iso/grub/theme/theme.txt "$SHARE/grub/theme/theme.txt"
 install -Dm644 iso/boot-bg/splash.png   "$SHARE/grub/theme/splash.png"
 install -Dm755 iso/grub/11_castalia_safe "$SHARE/grub/11_castalia_safe"
+install -Dm755 iso/grub/12_castalia_recovery "$SHARE/grub/12_castalia_recovery"
+
+echo "castalia-hook: staging the recovery boot environment (§18 P5)"
+install -Dm755 recovery/boot/castalia-recovery-console \
+    /usr/lib/castalia/recovery/castalia-recovery-console
+install -Dm755 recovery/boot/initramfs-hook \
+    /etc/initramfs-tools/hooks/castalia-recovery
+install -Dm755 recovery/boot/init-premount \
+    /etc/initramfs-tools/scripts/init-premount/castalia-recovery
 
 echo "castalia-hook: building the shell (target Qt, correct ABI)"
 cmake -S shell -B /tmp/shellbuild -DCMAKE_BUILD_TYPE=Release
