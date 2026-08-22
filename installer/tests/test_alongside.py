@@ -25,6 +25,7 @@ from castalia_installer.model import (  # noqa: E402
     free_regions,
     largest_free_region,
 )
+from castalia_installer.engine import DryRunner, execute  # noqa: E402
 from castalia_installer.plan import build_plan  # noqa: E402
 from castalia_installer.probe import parse_lsblk_partitions  # noqa: E402
 
@@ -274,3 +275,43 @@ class ProbeTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class FstabNamesTheRightPartitionsTest(unittest.TestCase):
+    """The bug that would have handed an existing OS's partition to fstab.
+
+    ``probe_uuids`` read partitions 1/2/3 unconditionally. On a whole-disk
+    install that is correct by accident — the layout starts at index 1. On an
+    alongside install the layout starts after the existing table, so the new
+    system's fstab named the *neighbour's* partitions. That is a bootable-
+    looking install that mounts somebody else's Windows as ``/``.
+    """
+
+    def _uuids(self, cfg, size_mib):
+        plan = build_plan(cfg, size_mib, configure_target=False)
+        runner = DryRunner()
+        execute(plan, runner, confirm_disk=cfg.target_disk)
+        fstab = next(text for path, text in runner.writes
+                     if path.endswith("/etc/fstab"))
+        return plan, fstab
+
+    def test_alongside_fstab_uses_the_partitions_the_plan_created(self):
+        cfg = InstallConfig(
+            target_disk="/dev/sda", username="dave", hostname="pc",
+            mode=MODE_ALONGSIDE, ram_mib=512,
+            free_start_mib=4096, free_end_mib=12288, first_index=2,
+        )
+        plan, fstab = self._uuids(cfg, 12288)
+        # boot=2, swap=3, root=4 — and /dev/sda1 is the neighbour's.
+        self.assertEqual([p.index for p in plan.partitions], [2, 3, 4])
+        self.assertIn("UUID-sda4  /  ", fstab.replace("      ", "  "))
+        self.assertNotIn("sda1", fstab,
+                         "fstab names a partition the installer did not make")
+
+    def test_whole_disk_fstab_is_unchanged_by_the_fix(self):
+        cfg = InstallConfig(target_disk="/dev/sda", username="dave",
+                            hostname="pc", ram_mib=512)
+        _, fstab = self._uuids(cfg, 40960)
+        self.assertIn("UUID-sda1", fstab)
+        self.assertIn("UUID-sda2", fstab)
+        self.assertIn("UUID-sda3", fstab)

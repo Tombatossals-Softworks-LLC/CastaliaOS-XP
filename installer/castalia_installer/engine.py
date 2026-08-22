@@ -15,7 +15,7 @@ from __future__ import annotations
 import subprocess
 from dataclasses import dataclass, field
 
-from .model import InstallConfig, partition_path
+from .model import partition_path
 from .plan import Plan
 
 
@@ -73,13 +73,24 @@ class SubprocessRunner(Runner):
         os.chmod(path, mode)
 
 
-def probe_uuids(runner: Runner, cfg: InstallConfig) -> dict[str, str]:
-    """Read the UUID of each created partition (role -> UUID)."""
+def probe_uuids(runner: Runner, plan: Plan) -> dict[str, str]:
+    """Read the UUID of each partition the plan created (role -> UUID).
+
+    The indices come from the plan, not from a constant. They used to be
+    hard-coded 1/2/3, which is right only when the layout starts at the front
+    of an empty disk. An alongside install numbers on from whatever the
+    existing table already uses, so on a disk with one partition Castalia's
+    root is partition 4 — and the old code would have read partition 3's UUID
+    and written it into the new system's fstab as ``/``. The freshly installed
+    machine would then mount somebody else's partition as its root, or fail to
+    boot; either way it is the existing OS that pays for it.
+    """
+    cfg = plan.config
     uuids: dict[str, str] = {}
-    for role, index in (("boot", 1), ("swap", 2), ("root", 3)):
-        part = partition_path(cfg.target_disk, index)
-        uuids[role] = runner.run(
-            ["blkid", "-s", "UUID", "-o", "value", part]
+    for part in plan.partitions:
+        dev = partition_path(cfg.target_disk, part.index)
+        uuids[part.role] = runner.run(
+            ["blkid", "-s", "UUID", "-o", "value", dev]
         )
     return uuids
 
@@ -113,7 +124,7 @@ def execute(
         if step.write is not None:
             path, render = step.write
             if not ctx["uuids"]:
-                ctx["uuids"] = probe_uuids(runner, cfg)
+                ctx["uuids"] = probe_uuids(runner, plan)
             runner.write_file(path, render(ctx))
             continue
         assert step.argv is not None
