@@ -1,6 +1,6 @@
 # Developer Guide
 
-*Last verified on version 0.1.1.*
+*Last verified on version 0.2.0.*
 
 Everything you need to build Castalia, run what CI runs, and add something to
 it. The authority on *why* anything is the way it is remains

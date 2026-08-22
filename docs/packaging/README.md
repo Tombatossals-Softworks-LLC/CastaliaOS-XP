@@ -1,6 +1,6 @@
 # Packaging Guide
 
-*Last verified on version 0.1.1.*
+*Last verified on version 0.2.0.*
 
 How Castalia becomes a `.deb`, a repository, and an ISO.
 

@@ -1,6 +1,6 @@
 # Las aplicaciones
 
-*Verificado en la versión 0.1.1.*
+*Verificado en la versión 0.2.0.*
 
 Todas están en el menú Inicio. Todas son originales de Castalia salvo donde se
 diga lo contrario.

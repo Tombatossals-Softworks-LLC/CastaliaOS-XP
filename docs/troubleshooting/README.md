@@ -1,6 +1,6 @@
 # Manual de problemas
 
-*Verificado en la versión 0.1.1.*
+*Verificado en la versión 0.2.0.*
 
 Organizado por **síntoma**, no por causa, porque cuando algo falla lo que sabes
 es lo que ves.

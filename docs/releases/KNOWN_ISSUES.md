@@ -1,6 +1,6 @@
 # Known issues
 
-*Last verified on version 0.1.1.*
+*Last verified on version 0.2.0.*
 
 What is wrong with Castalia right now, kept current rather than written at
 release time. §23.7 makes an honest version of this file a condition of going
@@ -23,6 +23,7 @@ visible from the outside.
 | Recovery | A graphical Recovery Center. Restore Points are reachable from the Control Center and from the boot-time console; there is no separate GUI. | §9 |
 | Hardware | `hwprobe` records its decisions but applies none of them. Nothing writes an `xorg.conf.d` snippet or a modprobe blacklist. | §6.15 |
 | Hardware | The quirks table has three rows, and none claims suspend is safe on anything, because no machine has been certified yet. | §19 |
+| Release | The release pipeline drafts a GitHub Release on a `v*` tag; **no tag has been pushed and no release has ever been published.** The pipeline has been exercised end to end by `workflow_dispatch` only. | §17.3 |
 | Help | The **Help Center app** (`castalia-bienvenida`, F1) still carries its own short built-in topics and does not link the full manual. The manual ships and is reachable with `castalia-manual`; wiring the app to it is a C++ change that has not been made. | §20 |
 | Performance | Boot time (§16.1) and launch-menu latency (§16.3) are **not measured**. The perf gate prints this on every run. | §16.4 |
 | Performance | Idle desktop memory (≤170 MB, §16.2) is unmeasured, and since §16.5 raised the shell budget to 84 MB it is the binding constraint. | §16.2 |

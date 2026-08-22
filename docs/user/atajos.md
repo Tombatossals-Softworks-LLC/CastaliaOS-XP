@@ -1,6 +1,6 @@
 # Atajos de teclado
 
-*Verificado en la versión 0.1.1.*
+*Verificado en la versión 0.2.0.*
 
 Estos son los atajos **globales**: funcionan estés donde estés. Vienen de
 `shell/session/openbox-rc.xml`, que es el único sitio donde se definen.

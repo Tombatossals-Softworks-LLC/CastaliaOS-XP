@@ -1,6 +1,6 @@
 # Guía de instalación
 
-*Verificado en la versión 0.1.1.*
+*Verificado en la versión 0.2.0.*
 
 ## 1. Elegir la imagen
 

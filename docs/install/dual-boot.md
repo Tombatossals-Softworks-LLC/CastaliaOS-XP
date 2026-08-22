@@ -1,6 +1,6 @@
 # Instalar junto a Windows
 
-*Verificado en la versión 0.1.1.*
+*Verificado en la versión 0.2.0.*
 
 Se puede, y Castalia lo hace sin tocar los datos que ya hay. Esta página
 explica exactamente qué hace, para que puedas decidir con información en vez

@@ -1,6 +1,6 @@
 # Castalia Explorer
 
-*Verificado en la versión 0.1.1.*
+*Verificado en la versión 0.2.0.*
 
 El explorador de archivos. Se abre con **Súper+E**, desde el menú, o al hacer
 doble clic en una carpeta del escritorio.

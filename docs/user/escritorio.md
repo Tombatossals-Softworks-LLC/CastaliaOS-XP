@@ -1,6 +1,6 @@
 # El escritorio
 
-*Verificado en la versión 0.1.1.*
+*Verificado en la versión 0.2.0.*
 
 ## Las dos mitades
 

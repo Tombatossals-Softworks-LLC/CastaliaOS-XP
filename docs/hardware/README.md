@@ -1,6 +1,6 @@
 # Hardware Compatibility Guide
 
-*Last verified on version 0.1.1.*
+*Last verified on version 0.2.0.*
 
 Which machines Castalia has been tested on, what worked, and what did not.
 

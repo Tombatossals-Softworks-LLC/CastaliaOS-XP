@@ -95,6 +95,28 @@ class TheStampRuleTest(unittest.TestCase):
         self.assertIsInstance(docs_lint.EXEMPT, set)
         self.assertEqual(docs_lint.EXEMPT, {"docs/releases/TEMPLATE.md"})
 
+    def test_a_past_release_note_is_exempt_but_known_issues_is_not(self):
+        # Release notes are historical: nobody re-verifies what 0.2.0
+        # shipped, because what 0.2.0 shipped does not change. KNOWN_ISSUES
+        # is the opposite — it is a living document, and a stale one is the
+        # worst kind, so the pattern must not reach it.
+        match = docs_lint.RELEASE_NOTES.match
+        for exempt in ("docs/releases/0.2.0.md", "docs/releases/1.0.md"):
+            self.assertTrue(match(exempt), exempt)
+        for watched in ("docs/releases/KNOWN_ISSUES.md",
+                        "docs/releases/TEMPLATE.md",
+                        "docs/releases/notes-0.2.0.md",
+                        "docs/user/README.md"):
+            self.assertIsNone(match(watched), watched)
+
+    def test_known_issues_is_actually_stamped(self):
+        # The pattern above only proves it is not exempt. This proves the
+        # exemption did not quietly start applying.
+        stamped = {str(p.relative_to(REPO))
+                   for p in docs_lint.stamped_files(REPO)}
+        self.assertIn("docs/releases/KNOWN_ISSUES.md", stamped)
+        self.assertNotIn("docs/releases/0.2.0.md", stamped)
+
 
 class LinksResolveTest(unittest.TestCase):
     def setUp(self):

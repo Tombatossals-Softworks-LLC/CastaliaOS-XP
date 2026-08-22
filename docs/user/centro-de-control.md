@@ -1,6 +1,6 @@
 # El Centro de control
 
-*Verificado en la versión 0.1.1.*
+*Verificado en la versión 0.2.0.*
 
 Menú → **Centro de control**. Nueve secciones, en la lista de la izquierda.
 

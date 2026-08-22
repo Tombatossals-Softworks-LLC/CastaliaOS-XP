@@ -63,6 +63,21 @@ EXEMPT = {
     "docs/releases/TEMPLATE.md",
 }
 
+#: Release notes for a *specific* version: docs/releases/1.2.3.md. Exempt by
+#: rule rather than by name, because there will be one per release and adding
+#: each to EXEMPT would turn an explicit list into a chore that gets skipped.
+#:
+#: They are exempt because they are historical records rather than living
+#: documents. A release note carries the date it was released; stamping it
+#: "last verified against 0.3.0" would be a false claim — nobody re-verifies
+#: what 0.2.0 shipped, and nobody should, because what 0.2.0 shipped does not
+#: change.
+#:
+#: Deliberately anchored and version-shaped: KNOWN_ISSUES.md and TEMPLATE.md
+#: do not match it, and KNOWN_ISSUES.md must not — it *is* a living document
+#: and a stale one is the worst kind.
+RELEASE_NOTES = re.compile(r"^docs/releases/\d+\.\d+(?:\.\d+)?\.md$")
+
 #: Both spellings of §20's rule. Spanish for the pages that become the Help
 #: Center, English for the contributor-facing ones.
 STAMP = re.compile(
@@ -98,8 +113,11 @@ def stamped_files(repo: Path) -> list:
         directory = repo / "docs" / name
         if not directory.is_dir():
             continue
-        out.extend(path for path in sorted(directory.rglob("*.md"))
-                   if str(path.relative_to(repo)) not in EXEMPT)
+        for path in sorted(directory.rglob("*.md")):
+            rel = str(path.relative_to(repo))
+            if rel in EXEMPT or RELEASE_NOTES.match(rel):
+                continue
+            out.append(path)
     return out
 
 

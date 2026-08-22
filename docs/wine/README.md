@@ -1,6 +1,6 @@
 # Aplicaciones de Windows (Wine)
 
-*Verificado en la versión 0.1.1.*
+*Verificado en la versión 0.2.0.*
 
 Castalia puede ejecutar muchos programas de Windows mediante **Wine**. Muchos,
 no todos, y esta guía existe para que sepas de antemano en cuál de los dos

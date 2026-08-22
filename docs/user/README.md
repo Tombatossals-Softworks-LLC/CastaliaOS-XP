@@ -1,6 +1,6 @@
 # Manual de usuario de Castalia OS
 
-*Verificado en la versión 0.1.1.*
+*Verificado en la versión 0.2.0.*
 
 Este manual describe **lo que hay hoy en el sistema**, no lo que está
 planeado. Si algo aparece aquí, existe y se puede usar.

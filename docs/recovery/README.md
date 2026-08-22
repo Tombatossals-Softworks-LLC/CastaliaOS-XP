@@ -1,6 +1,6 @@
 # Guía de recuperación
 
-*Verificado en la versión 0.1.1.*
+*Verificado en la versión 0.2.0.*
 
 Qué hacer cuando el sistema se rompe, ordenado de menos a más grave.
 

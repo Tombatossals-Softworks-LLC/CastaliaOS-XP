@@ -1,6 +1,6 @@
 # Aviso legal
 
-*Verificado en la versión 0.1.1.*
+*Verificado en la versión 0.2.0.*
 
 Esta página es la versión para el Centro de ayuda del aviso legal completo.
 El texto normativo, en inglés y con las atribuciones detalladas, está en

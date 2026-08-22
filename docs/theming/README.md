@@ -1,6 +1,6 @@
 # Theming Guide
 
-*Last verified on version 0.1.1.*
+*Last verified on version 0.2.0.*
 
 How to make a Castalia theme, and what the linter will not let you get away
 with. The bundle format itself is specified in
