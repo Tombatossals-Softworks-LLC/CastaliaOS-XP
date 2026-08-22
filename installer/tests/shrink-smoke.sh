@@ -27,6 +27,8 @@ command -v losetup >/dev/null 2>&1 || { echo "need losetup" >&2; exit 2; }
 [ "$(id -u)" = "0" ] || { echo "shrink-smoke: must run as root" >&2; exit 2; }
 
 HERE=$(cd "$(dirname "$0")/.." && pwd)     # installer/
+# shellcheck source=installer/tests/lib-smoke.sh
+. "$HERE/tests/lib-smoke.sh"
 WORK=$(mktemp -d)
 IMG="$WORK/disk.img"
 SRC="$WORK/src"
@@ -77,6 +79,8 @@ parted -s "$LOOP" mkpart primary 1MiB 100%
 partprobe "$LOOP"
 sleep 1
 $MKFS "${LOOP}p1"
+settle_dev "${LOOP}p1" || { echo "shrink-smoke: ${LOOP}p1 never appeared" >&2
+                            exit 1; }
 mount "${LOOP}p1" "$OTHER"
 
 mkdir -p "$OTHER/Users/dave/Documents"
@@ -135,7 +139,7 @@ fi
 
 # ---- 4. is every byte still there? -----------------------------------------
 echo "shrink-smoke: verifying the data survived"
-if mount "${LOOP}p1" "$OTHER" 2>/dev/null; then
+if try_mount "${LOOP}p1" "$OTHER"; then
     echo "  OK  the shrunk filesystem still mounts"
     AFTER=$(find "$OTHER" -type f -exec md5sum {} + | sort -k2 | md5sum)
     AFTER_COUNT=$(find "$OTHER" -type f | wc -l)
@@ -168,7 +172,7 @@ fi
 
 # ---- 5. and did Castalia land in the space that freed up? ------------------
 echo "shrink-smoke: verifying Castalia landed in the freed space"
-if mount "${LOOP}p4" "$MNT" 2>/dev/null; then
+if try_mount "${LOOP}p4" "$MNT"; then
     if [ -f "$MNT/etc/castalia-release" ]; then
         echo "  OK  Castalia root at ${LOOP}p4: $(cat "$MNT/etc/castalia-release")"
     else

@@ -122,6 +122,38 @@ update-initramfs -u -k all || update-initramfs -u || :
 exit 0
 """
 
+#: Wait for the kernel and udev to have finished rebuilding the partition
+#: device nodes before anything tries to use one.
+#:
+#: `partprobe` does not return with the nodes ready. It asks the kernel to
+#: re-read the table, and the kernel tears every existing node of that disk
+#: down and builds it again; udev then recreates the /dev entries. A `mkfs`
+#: issued in that window fails with "no such file or directory" on a
+#: partition that was created a moment earlier and is about to exist again.
+#:
+#: This is not theoretical. It is what made a shrink install fail at "Format
+#: /boot (ext4)" on a disk whose partition table was, seconds later, exactly
+#: right — the kind of failure that looks like a corrupt disk and is a race.
+#:
+#: `udevadm settle` is the correct answer where udev is running; the polling
+#: loop is the answer where it is not (an initramfs, a minimal live image,
+#: a container), and neither is allowed to fail the install on its own: if
+#: the node genuinely never appears, the step that needed it will say so with
+#: its own error, which is more useful than this one guessing.
+SETTLE_SH = """set -u
+disk=$1
+command -v udevadm >/dev/null 2>&1 && udevadm settle --timeout=30 || :
+i=0
+while [ "$i" -lt 100 ]; do
+    if [ -b "$disk" ]; then
+        break
+    fi
+    sleep 0.1
+    i=$((i + 1))
+done
+exit 0
+"""
+
 # Directories never copied from the live root onto the target.
 COPY_EXCLUDES = (
     "/dev/*", "/proc/*", "/sys/*", "/run/*", "/tmp/*", "/mnt/*", "/media/*",
@@ -322,6 +354,8 @@ def build_shrink_steps(shrink: ShrinkPlan) -> list[Step]:
              destructive=True),
         Step("Re-read the partition table", ["partprobe", disk],
              destructive=True),
+        Step("Wait for the partition devices to come back",
+             ["sh", "-c", SETTLE_SH, "sh", dev]),
     ]
     # Verify afterwards, not just before. A resizer that returned 0 having
     # produced a filesystem that no longer checks is the failure this is for,
@@ -501,6 +535,10 @@ def build_plan(
            destructive=True))
     s(Step("Re-read the partition table",
            ["partprobe", disk], destructive=True))
+    # partprobe returns before the nodes are back; mkfs would race it. See
+    # SETTLE_SH — this is the step whose absence looked like a corrupt disk.
+    s(Step("Wait for the partition devices to appear",
+           ["sh", "-c", SETTLE_SH, "sh", rpart]))
 
     # 2. Filesystems.
     s(Step("Format /boot (ext4)",

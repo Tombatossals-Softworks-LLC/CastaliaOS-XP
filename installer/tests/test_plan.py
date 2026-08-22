@@ -149,6 +149,14 @@ class PlanShape(unittest.TestCase):
         self.assertFalse(step.destructive)
         self.assertTrue(step.argv[-1].rstrip().endswith("exit 0"))
 
+    def test_the_whole_disk_plan_waits_after_partprobe_too(self):
+        # The same race, on the path most installs take.
+        titles = [s.title for s in self.plan.steps]
+        i = titles.index("Re-read the partition table")
+        self.assertTrue(titles[i + 1].startswith("Wait for the partition"),
+                        titles[i:i + 3])
+        self.assertLess(i + 1, titles.index("Format /boot (ext4)"))
+
     def test_creates_the_user_in_chroot(self):
         useradd = [s for s in self.plan.steps
                    if s.argv and s.argv[0] == "useradd"]

@@ -25,6 +25,8 @@ command -v losetup >/dev/null 2>&1 || { echo "need losetup" >&2; exit 2; }
 [ "$(id -u)" = "0" ] || { echo "alongside-smoke: must run as root" >&2; exit 2; }
 
 HERE=$(cd "$(dirname "$0")/.." && pwd)     # installer/
+# shellcheck source=installer/tests/lib-smoke.sh
+. "$HERE/tests/lib-smoke.sh"
 WORK=$(mktemp -d)
 IMG="$WORK/disk.img"
 SRC="$WORK/src"
@@ -59,6 +61,8 @@ parted -s "$LOOP" mkpart primary ext4 1MiB 4096MiB
 partprobe "$LOOP"
 sleep 1
 mkfs.ext4 -qF -L OtherOS "${LOOP}p1"
+settle_dev "${LOOP}p1" || { echo "alongside-smoke: ${LOOP}p1 never appeared" \
+                            >&2; exit 1; }
 mount "${LOOP}p1" "$OTHER"
 mkdir -p "$OTHER/Users/dave/Documents"
 # Something big enough that a stray write would land in it, and something
@@ -98,7 +102,7 @@ else
     fail=1
 fi
 
-if mount "${LOOP}p1" "$OTHER" 2>/dev/null; then
+if try_mount "${LOOP}p1" "$OTHER"; then
     echo "  OK  the existing filesystem still mounts"
     AFTER=$(find "$OTHER" -type f -exec md5sum {} + | sort -k2 | md5sum)
     AFTER_COUNT=$(find "$OTHER" -type f | wc -l)
@@ -123,7 +127,7 @@ fi
 
 # ---- 4. and did Castalia actually get installed? ---------------------------
 echo "alongside-smoke: verifying Castalia landed in the free space"
-if mount "${LOOP}p4" "$MNT" 2>/dev/null; then
+if try_mount "${LOOP}p4" "$MNT"; then
     if [ -f "$MNT/etc/castalia-release" ]; then
         echo "  OK  Castalia root at ${LOOP}p4: $(cat "$MNT/etc/castalia-release")"
     else

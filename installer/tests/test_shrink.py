@@ -215,6 +215,31 @@ class StepOrderTest(unittest.TestCase):
         self.assertFalse(rehearsal.destructive)
         self.assertIn("--no-action", rehearsal.argv)
 
+    def test_nothing_uses_a_partition_node_straight_after_partprobe(self):
+        # partprobe does not return with the device nodes ready: the kernel
+        # tears them down and rebuilds them, and udev recreates /dev after
+        # that. A command issued in the gap fails on a partition that exists
+        # a moment later. It made a real shrink install die at "Format /boot"
+        # on a disk whose table was, seconds afterwards, exactly right.
+        cfg = shrink_cfg(windows(size_gib=200), 40 * GiB)
+        plan = build_plan(cfg, 200 * GiB, configure_target=False)
+        titles = [s.title for s in plan.steps]
+        for i, title in enumerate(titles):
+            if title.startswith("Re-read the partition table"):
+                self.assertTrue(titles[i + 1].startswith("Wait for the "),
+                                f"{titles[i + 1]!r} runs straight after "
+                                f"partprobe")
+
+    def test_the_wait_never_fails_the_install_by_itself(self):
+        # If a node genuinely never appears, the step that needed it says so
+        # with its own error, which is more useful than this one guessing.
+        cfg = shrink_cfg(windows(size_gib=200), 40 * GiB)
+        plan = build_plan(cfg, 200 * GiB, configure_target=False)
+        for step in plan.steps:
+            if step.title.startswith("Wait for the "):
+                self.assertFalse(step.destructive, step.title)
+                self.assertTrue(step.argv[2].rstrip().endswith("exit 0"))
+
     def test_the_result_is_checked_afterwards_too(self):
         for fstype in ("ntfs", "ext4"):
             steps = build_shrink_steps(
