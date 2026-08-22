@@ -53,11 +53,13 @@ PANEL="$BINDIR/panel/castalia-panel"
 DESKTOP="$BINDIR/desktop/castalia-desktop"
 EXPLORER="$BINDIR/explorer/castalia-explorer"
 CONTROL="$BINDIR/apps/control-center/castalia-control-center"
-# The smallest first-party window there is: a clock face and nothing else. It
-# is measured not because anyone budgeted it, but to find out what a Castalia
-# window costs BEFORE it does anything — Qt5, libcastalia-ui, the theme QSS,
-# one window. Every §16.2 app budget is that number plus the app's own work,
-# so it is the only way to tell "this app is heavy" from "the floor is here".
+# The smallest first-party window there is: a clock face and nothing else,
+# standing in for what a Castalia window costs BEFORE it does anything — Qt5,
+# libcastalia-ui, the theme QSS, one window. Every §16.2 app budget is that
+# number plus the app's own work, so it is the only way to tell "this app is
+# heavy" from "the floor is here". §16.5 (2026-08-22) promoted it from a
+# diagnostic to a budget of its own: it is the row where a memory regression
+# that hits every app at once actually shows up.
 BASELINE="$BINDIR/apps/clock/castalia-reloj"
 for b in "$PANEL" "$DESKTOP" "$EXPLORER" "$CONTROL" "$BASELINE"; do
     [ -x "$b" ] || { echo "measure: missing binary: $b" >&2; exit 2; }
@@ -218,13 +220,13 @@ else
 fi
 echo "measure:   explorer = ${EX_MS} ms, ${EX_PSS} MB" >&2
 
-echo "measure: baseline (smallest window: the clock), best of $RUNS" >&2
+echo "measure: toolkit floor (smallest window: the clock), best of $RUNS" >&2
 if BL=$(best_of "$RUNS" "$BASELINE"); then
     BL_MS=${BL%% *}; BL_PSS=${BL##* }
 else
     BL_MS=-1; BL_PSS=-1
 fi
-echo "measure:   baseline = ${BL_MS} ms, ${BL_PSS} MB" >&2
+echo "measure:   toolkit floor = ${BL_MS} ms, ${BL_PSS} MB" >&2
 
 echo "measure: Control Center, best of $RUNS" >&2
 if CC=$(best_of "$RUNS" "$CONTROL"); then
@@ -242,10 +244,10 @@ REPORT=$(cat <<EOF
     "panel_pss_mb": $PANEL_PSS,
     "desktop_pss_mb": $DESKTOP_PSS,
     "panel_rss_mb": $PANEL_RSS,
-    "desktop_rss_mb": $DESKTOP_RSS,
-    "baseline_window_pss_mb": $BL_PSS
+    "desktop_rss_mb": $DESKTOP_RSS
   },
   "measurements": {
+    "toolkit_floor_pss_mb": $BL_PSS,
     "shell_pss_mb": $SHELL_PSS,
     "explorer_pss_mb": $EX_PSS,
     "explorer_launch_ms": $EX_MS,

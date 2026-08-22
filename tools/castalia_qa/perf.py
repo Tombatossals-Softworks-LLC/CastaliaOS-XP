@@ -15,18 +15,15 @@ function of that report, so the rules are unit-testable without a desktop.
 Why the numbers still mean something when they are read on a CI runner rather
 than on a Pentium 4:
 
-* **Memory** is the honest one. RSS/PSS depends on the toolkit and the word
-  size, not on how fast the machine is, and the runner is amd64 while FLOOR is
-  i686 — 64-bit pointers make our reading the *pessimistic* one. Under budget
-  here means under budget there.
-  One honest caveat, flagged rather than resolved here: §16.2's column is
-  headed *RSS*, and this gates *PSS*. For the shell row that is unavoidable —
-  the panel and the desktop share one copy of Qt, and adding their RSS counts
-  it twice — but for a single app PSS is the more generous of the two, so a
-  breach measured this way is a real breach and then some. Whether the §16.2
-  numbers were ever meant as RSS on a 64-bit build is a budget question, and
-  §16.4 makes budget changes a signed-off decision on purpose. The report
-  prints both numbers so the decision can be made on evidence.
+* **Memory** is the honest one. PSS depends on the toolkit and the word size,
+  not on how fast the machine is, and the runner is amd64 while FLOOR is i686.
+  That gap has now been measured rather than assumed: building the shell for
+  i386 moves PSS by 4%, in the direction that makes the runner's reading the
+  pessimistic one. Under budget here means under budget there.
+  §16.2 used to be headed *RSS* while this gated *PSS*; the §16.5 decision of
+  2026-08-22 settled that in favour of PSS, because summing RSS across the
+  shell's two processes double-counts the one copy of Qt they share. The
+  report still prints both so the gap stays visible.
 
 * **Latency** is not. A cloud runner is many times faster than the FLOOR
   machine, so passing here says nothing about passing there; §19.2 keeps that
@@ -48,8 +45,10 @@ NOT_MEASURED_YET = (
     "image driven end to end",
     "launch-menu open and menu-search latency (§16.3) — needs the panel to "
     "report its own first paint; there is no way to click it from a script",
-    "idle desktop RSS including kernel and services (§16.2) — this measures "
-    "the shell processes, not a booted system",
+    "idle desktop used memory including kernel and services (§16.2, "
+    "\u2264170 MB) — this measures the shell processes, not a booted system. "
+    "Since §16.5 raised the shell to 84 MB this is the BINDING memory "
+    "constraint, and it is the one nothing checks",
     "Explorer 1k-entry listing, Alt+Tab and drag latency (§16.3)",
 )
 
@@ -75,14 +74,21 @@ class Budget:
         return value > self.ci
 
 
-#: §16.2 — memory. Enforced at the FLOOR number itself: see the docstring.
+#: §16.2 — memory, as re-budgeted by the §16.5 decision of 2026-08-22.
+#: Enforced at the FLOOR number itself: see the docstring.
+#:
+#: The toolkit floor leads the table because every row under it is that
+#: number plus an app's own work. When several memory rows go red at once,
+#: this one says whether the cause is upstream of all of them.
 MEMORY = (
+    Budget("toolkit_floor_pss_mb", "Toolkit floor (one empty window)", "MB",
+           floor=34, ci=34, section="§16.2"),
     Budget("shell_pss_mb", "Shell alone (panel + desktop + session)", "MB",
-           floor=60, ci=60, section="§16.2"),
+           floor=84, ci=84, section="§16.2"),
     Budget("control_center_pss_mb", "Control Center", "MB",
-           floor=25, ci=25, section="§16.2"),
+           floor=36, ci=36, section="§16.2"),
     Budget("explorer_pss_mb", "Explorer window", "MB",
-           floor=35, ci=35, section="§16.2"),
+           floor=38, ci=38, section="§16.2"),
 )
 
 #: §16.3 — launch latency. The CI ceiling is 4x the FLOOR budget: a runner
@@ -143,38 +149,41 @@ def format_diagnostics(report: dict) -> str:
     """Numbers the gate does not judge but a person reading a breach wants.
 
     A failing total tells you the shell grew; it does not tell you which
-    plane grew, or whether the gap between PSS and RSS is where the argument
-    actually is. Both belong next to the verdict, not in a separate hunt.
+    plane grew, whether the toolkit floor moved under everything at once, or
+    whether the gap between PSS and RSS is where the argument actually is.
+    All of that belongs next to the verdict, not in a separate hunt.
     """
     diag = report.get("diagnostics") or {}
-    if not diag:
+    measured = report.get("measurements") or {}
+    if not diag and not measured:
         return ""
-    rows = "  ".join(f"{k.replace('_mb', '')}={v}MB"
-                     for k, v in sorted(diag.items()))
-    out = [f"\nBreakdown (not gated): {rows}"]
+    out = []
+    if diag:
+        rows = "  ".join(f"{k.replace('_mb', '')}={v}MB"
+                         for k, v in sorted(diag.items()))
+        out.append(f"\nBreakdown (not gated): {rows}")
 
-    # The baseline turns "this app is over budget" into an answerable
-    # question. Every §16.2 app number is the cost of one Castalia window
-    # plus what that app does; if the first term alone is already near the
-    # budget, no amount of work on the second term will get under it, and
-    # the honest response is a §16.4 budget conversation rather than a
-    # doomed optimisation.
-    base = diag.get("baseline_window_pss_mb")
-    if isinstance(base, (int, float)) and base > 0:
+    # Own cost turns "this app is over budget" into an answerable question.
+    # Every §16.2 app number is one Castalia window plus what that app does;
+    # splitting the two says whether there is any work to do in the app at
+    # all, or whether the floor moved under all of them at once. The §16.5
+    # decision of 2026-08-22 exists because for a year nobody had split them.
+    floor = measured.get("toolkit_floor_pss_mb")
+    if isinstance(floor, (int, float)) and floor > 0:
         out.append(
-            f"An empty Castalia window (Qt5 + libcastalia-ui + theme) costs "
-            f"{base:.1f}MB before the app does anything.")
-        tightest = min((b for b in MEMORY if "shell" not in b.key),
-                       key=lambda b: b.floor, default=None)
-        if tightest is not None and base > tightest.floor * 0.8:
-            out.append(
-                f"  That is {base / tightest.floor:.0%} of the tightest app "
-                f"budget ({tightest.what}, {tightest.floor:.0f}MB), so that "
-                f"budget is set below the toolkit's floor on this build. "
-                f"§16.4 makes changing it a signed-off decision — this is "
-                f"the evidence for that conversation, not a licence to "
-                f"raise it here. It is written up, with the i386 numbers, in "
-                f"docs/evidence/perf-16-memory-floor.md.")
+            f"\nAn empty Castalia window (Qt5 + libcastalia-ui + theme) costs "
+            f"{floor:.1f}MB before the app does anything. Own cost above it:")
+        for b in MEMORY:
+            if b.key == "toolkit_floor_pss_mb":
+                continue
+            v = measured.get(b.key)
+            if not isinstance(v, (int, float)) or v < 0:
+                continue
+            # The shell is two windows, so its floor is paid twice.
+            windows = 2 if b.key == "shell_pss_mb" else 1
+            own = v - floor * windows
+            note = "" if windows == 1 else f" (floor counted {windows}x)"
+            out.append(f"  {b.what:<40} {own:+6.1f}MB{note}")
     return "\n".join(out)
 
 

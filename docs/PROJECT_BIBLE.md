@@ -1789,15 +1789,43 @@ fast, ideally faster, thanks to runit + a lean stack.)*
 
 ### 16.2 Memory budgets
 
-| Component | FLOOR RSS target | TARGET RSS target |
+**The metric is PSS**, not RSS, for every per-process row below. The panel and
+the desktop plane are two processes sharing one copy of Qt; adding their RSS
+counts that copy twice and invents memory the machine never spent. PSS divides
+shared pages among the processes actually sharing them, which is the number
+that answers "how much of this 512 MB is gone". The *Idle desktop* row is
+system-wide `MemAvailable`-style used memory and is unaffected by the choice.
+
+| Component | FLOOR PSS budget | TARGET PSS budget |
 |---|---|---|
 | **Idle desktop** (kernel+services+shell, no apps) | ≤ **170 MB** used | ≤ **300 MB** used |
-| Shell alone (panel+desktop+session) | ≤ **60 MB** | ≤ **80 MB** |
-| Control Center | ≤ **25 MB** | ≤ **35 MB** |
-| Explorer window | ≤ **35 MB** | ≤ **55 MB** |
+| **Toolkit floor** — one empty Castalia window | ≤ **34 MB** | ≤ **40 MB** |
+| Shell alone (panel+desktop+session) | ≤ **84 MB** | ≤ **115 MB** |
+| Control Center | ≤ **36 MB** | ≤ **50 MB** |
+| Explorer window | ≤ **38 MB** | ≤ **60 MB** |
 | Headroom for one user app on FLOOR | ≥ **250 MB free** after idle | — |
 
 *(Idle ≤170 MB on 512 MB leaves real room to work — the whole point.)*
+
+**The toolkit-floor row is the one that matters.** An empty Castalia window —
+Qt5, libcastalia-ui, the theme QSS, one window, no work — is what every other
+per-app number is built on top of. Measured, it costs 29.7 MB on i686 and
+31.0 MB on amd64, and the Control Center's nine settings pages add 0.1 MB to it
+while Explorer adds 2.4 MB. Budgeting an app without budgeting the floor it
+stands on is how the previous numbers came to be unreachable on the day they
+were written. If this row is ever breached it is a toolkit or theme
+regression, not an app one, and it is the only memory row where optimisation
+work has anywhere to go.
+
+Every per-app budget above is the **measured amd64 figure** — the pessimistic
+of the two readings — rounded up with roughly 10% of headroom for growth. That
+makes them budgets an i686 FLOOR machine clears with room to spare, which is
+the direction the safety margin should point.
+
+**Watch item:** with the shell at 84 MB, *Idle desktop* ≤170 MB now leaves
+86 MB for the kernel and services, and that row has never been measured. It is
+the binding memory constraint from here on, and the first thing the FLOOR QEMU
+harness must answer when it exists (§16.4, §19.1).
 
 ### 16.3 Responsiveness budgets
 
@@ -1827,7 +1855,55 @@ fast, ideally faster, thanks to runit + a lean stack.)*
   emulated numbers.
 - **Budget changes are reviewed like API changes** — raising a FLOOR budget
   requires justification and sign-off, because the FLOOR *is the product's
-  promise*.
+  promise*. Every such change is recorded in §16.5 with its date, its
+  evidence, and what it cost us to agree to.
+
+### 16.5 Budget decision log
+
+Sign-offs on FLOOR budgets, newest first. A budget with no entry here is the
+one it was born with.
+
+#### 2026-08-22 — §16.2 re-budgeted around the measured toolkit floor
+
+*Signed off: Dave Abellan. Evidence:
+[`docs/evidence/perf-16-memory-floor.md`](evidence/perf-16-memory-floor.md),
+CI runs 32381205320 (amd64) and 32384615318 (i386).*
+
+**What changed.** The metric is now stated as PSS. The per-app FLOOR budgets
+move from 60/25/35 MB (shell/Control Center/Explorer) to 84/36/38 MB, and a new
+*toolkit floor* row budgets an empty Castalia window at 34 MB.
+
+**Why.** The first run of the §16 gate failed, and the measurements behind it
+said the failure was not in our code. An empty window costs 29.7 MB on i686;
+the Control Center's own contribution above that is 0.1 MB. The 25 MB Control
+Center budget was 84% of the cost of a window that does nothing — unreachable
+on the day it was written, and unreachable by any amount of work on the app.
+The 60 MB shell budget was *exactly* the floor for two windows. The leading
+alternative explanation — that FLOOR is i686 and the gate runs on amd64, so
+64-bit pointers were the culprit — was tested by building and measuring the
+shell on i386 and is refuted: the gap is 4% of PSS, not a factor.
+
+**What it costs.** The honest accounting, because a raised budget is a promise
+withdrawn:
+
+- Idle desktop stays at ≤170 MB and is now the binding constraint, with 86 MB
+  left for the kernel and services. It is unmeasured; see the §16.2 watch item.
+- ≥250 MB free for a user app after idle is unchanged, because it hangs off
+  the idle row rather than off the shell row.
+- What a user loses in practice is roughly 24 MB of the 512 — one browser tab —
+  and the alternative on offer was not 24 MB of savings, it was a red build
+  nobody could act on.
+
+**What was rejected.** Reopening §12.2 (Qt5 vs GTK3) on this evidence: the
+per-window cost is real and now known, but it is one input against a decision
+taken on several, and re-toolkiting the whole shell at Phase 5 would cost more
+than the memory is worth. Recording the breach as a "known deviation" was also
+rejected — a budget that is documented as permanently broken is not a budget,
+and §16 opens by saying these are enforced rather than aspired to.
+
+**What is still owed.** §16.1 boot budgets and the §16.3 menu latencies remain
+unmeasured; the gate prints that on every run and it is not fixed by this
+decision.
 
 ---
 

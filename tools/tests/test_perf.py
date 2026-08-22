@@ -6,6 +6,7 @@ nothing are worth more tests than the arithmetic is.
 """
 import io
 import json
+import re
 import sys
 import tempfile
 import unittest
@@ -22,10 +23,11 @@ REPO = TOOLS.parent
 
 def report(**over):
     m = {
-        "shell_pss_mb": 41.0,
-        "explorer_pss_mb": 28.0,
+        "toolkit_floor_pss_mb": 31.0,
+        "shell_pss_mb": 77.0,
+        "explorer_pss_mb": 32.5,
         "explorer_launch_ms": 300,
-        "control_center_pss_mb": 22.0,
+        "control_center_pss_mb": 31.8,
         "control_center_launch_ms": 250,
     }
     m.update(over)
@@ -49,12 +51,48 @@ class BudgetTableTest(unittest.TestCase):
         # too: §16.4 says raising a FLOOR budget needs sign-off, because the
         # FLOOR is the product's promise.
         expected = {
-            "shell_pss_mb": 60, "control_center_pss_mb": 25,
-            "explorer_pss_mb": 35, "explorer_launch_ms": 600,
-            "control_center_launch_ms": 400,
+            "toolkit_floor_pss_mb": 34, "shell_pss_mb": 84,
+            "control_center_pss_mb": 36, "explorer_pss_mb": 38,
+            "explorer_launch_ms": 600, "control_center_launch_ms": 400,
         }
         self.assertEqual({k: b.floor for k, b in perf.BY_KEY.items()},
                          {k: float(v) for k, v in expected.items()})
+
+    def test_the_bible_table_and_the_code_agree(self):
+        # The comment above says "if a budget is edited here it must be
+        # edited there too". Comments do not enforce anything; this does.
+        # It reads §16.2's own table, so a Bible edit that forgets the gate
+        # (or a gate edit that forgets the Bible) fails the build.
+        bible = (REPO / "docs" / "PROJECT_BIBLE.md").read_text(encoding="utf-8")
+        table = bible.split("### 16.2 Memory budgets")[1].split("### 16.3")[0]
+        rows = {}
+        for line in table.splitlines():
+            m = re.match(r"\|\s*(.+?)\s*\|\s*≤ \*\*(\d+) MB\*\*", line)
+            if m and "Idle desktop" not in m.group(1):
+                rows[m.group(1)] = float(m.group(2))
+        self.assertEqual(len(rows), len(perf.MEMORY),
+                         f"§16.2 has {len(rows)} gated rows, code has "
+                         f"{len(perf.MEMORY)}: {sorted(rows)}")
+        def name(label):
+            """The row's subject, before any parenthetical or em-dash gloss."""
+            return re.split(r" —|\(", label)[0].strip("* ").lower()
+
+        by_name = {name(k): v for k, v in rows.items()}
+        for budget in perf.MEMORY:
+            key = name(budget.what)
+            self.assertIn(key, by_name, f"§16.2 has no row for {budget.key}")
+            self.assertEqual(by_name[key], budget.floor,
+                             f"§16.2 says {by_name[key]}MB for '{key}', "
+                             f"{budget.key} says {budget.floor}MB")
+
+    def test_the_budget_change_is_signed_off_in_the_decision_log(self):
+        # §16.4: raising a FLOOR budget requires sign-off. These numbers were
+        # raised, so the log has to carry the entry that authorised it.
+        bible = (REPO / "docs" / "PROJECT_BIBLE.md").read_text(encoding="utf-8")
+        self.assertIn("### 16.5 Budget decision log", bible)
+        log = bible.split("### 16.5 Budget decision log")[1]
+        self.assertIn("2026-08-22", log)
+        self.assertIn("Signed off:", log)
 
     def test_memory_is_gated_at_the_floor_number_itself(self):
         # PSS does not get bigger because a machine is slower, and the runner
@@ -86,13 +124,31 @@ class EvaluateTest(unittest.TestCase):
         self.assertIn("perf-gate: OK", out)
 
     def test_memory_over_budget_fails(self):
-        rc, _, err = run_main(report(shell_pss_mb=61.0))
+        rc, _, err = run_main(report(shell_pss_mb=85.0))
         self.assertEqual(rc, 1)
         self.assertIn("Shell alone", err)
 
     def test_exactly_on_budget_passes(self):
-        rc, _, _ = run_main(report(shell_pss_mb=60.0))
+        rc, _, _ = run_main(report(shell_pss_mb=84.0))
         self.assertEqual(rc, 0)
+
+    def test_the_toolkit_floor_is_a_budget_of_its_own(self):
+        # §16.5: the row every other memory row is built on top of. A toolkit
+        # or theme regression moves this one and all the others together, and
+        # without it in the table there is no way to tell that from four
+        # separate app regressions.
+        rc, _, err = run_main(report(toolkit_floor_pss_mb=40.0))
+        self.assertEqual(rc, 1)
+        self.assertIn("Toolkit floor", err)
+
+    def test_own_cost_is_reported_against_the_toolkit_floor(self):
+        # A breach has to say whether there is any work to do in the app. The
+        # Control Center's measured own cost is a tenth of a megabyte; a
+        # report that hides that invites a doomed optimisation.
+        _, out, _ = run_main(report())
+        self.assertIn("Own cost above it", out)
+        self.assertIn("+0.8MB", out)          # 31.8 measured - 31.0 floor
+        self.assertIn("floor counted 2x", out)  # the shell is two windows
 
     def test_a_catastrophic_launch_regression_fails(self):
         # 4 s to open Explorer: well past even the loose CI ceiling. This is
@@ -130,7 +186,7 @@ class DoesNotLieTest(unittest.TestCase):
         self.assertIn(f"{len(perf.BUDGETS)} metric(s) were not measured", err)
 
     def test_a_non_numeric_value_is_not_a_pass(self):
-        rc, _, err = run_main(report(shell_pss_mb="lots"))
+        rc, _, err = run_main(report(shell_pss_mb="mucha"))
         self.assertEqual(rc, 1)
         self.assertIn("not measured", err)
 
