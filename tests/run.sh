@@ -5,7 +5,8 @@
 #   lint    ruff over all Python tooling
 #   unit    unit tests: QA tooling, installer backend, Restore Points
 #           backend, hardware probe
-#   gates   design-system + legal + pipeline gates (theme-lint, provenance,
+#   gates   design-system + legal + docs + pipeline gates (theme-lint,
+#           provenance, the §20 doc set,
 #           theme/sound export smokes, mkiso/mkdeb/mkrepo/installer dry-runs,
 #           Restore Points snapshot smoke)
 #   build   compile the Qt shell + run the three head-less self-tests
@@ -70,6 +71,11 @@ tier_gates() {
     say gates "package + repo dry-run (§13, §17.2)"
     sh packages/mkdeb.sh --dry-run > /dev/null && echo "  mkdeb: plan OK"
     sh build/mkrepo.sh --dry-run > /dev/null && echo "  mkrepo: plan OK"
+    say gates "documentation set (§20) — the set, the stamps, the links"
+    PYTHONPATH=tools python3 -m castalia_qa.docs_lint .
+    say gates "offline Help Center builds from docs/ (§20)"
+    PYTHONPATH=tools python3 tools/help_build.py --check
+
     say gates "hardware probe dry-run against this machine (§6.15)"
     PYTHONPATH=hwprobe python3 -m castalia_hwprobe --dry-run \
         --quirks hwprobe/quirks.json > /dev/null

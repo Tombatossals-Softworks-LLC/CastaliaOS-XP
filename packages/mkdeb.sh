@@ -82,6 +82,8 @@ if [ "$DRY" -eq 1 ]; then
     done
     log "PLAN session: shell/session/castalia-session -> $PREFIX/bin (+ /usr/bin)"
     log "PLAN session: shell/session/castalia-open -> $PREFIX/bin (+ /usr/bin)"
+    log "PLAN session: shell/session/castalia-manual -> $PREFIX/bin (+ /usr/bin)"
+    log "PLAN docs: docs/ rendered offline -> $SHARE/help (§20)"
     log "PLAN config: $SHARE/openbox/rc.xml (§7.7 keyboard map, via --config-file)"
     log "PLAN session: shell/session/castalia.desktop -> /usr/share/xsessions"
     log "PLAN assets: themes/ branding/ -> $SHARE"
@@ -124,6 +126,19 @@ ln -s "$PREFIX/bin/castalia-session" "$STAGE/usr/bin/castalia-session"
 install -Dm755 "$REPO/shell/session/castalia-open" \
     "$STAGE$PREFIX/bin/castalia-open"
 ln -s "$PREFIX/bin/castalia-open" "$STAGE/usr/bin/castalia-open"
+install -Dm755 "$REPO/shell/session/castalia-manual" \
+    "$STAGE$PREFIX/bin/castalia-manual"
+ln -s "$PREFIX/bin/castalia-manual" "$STAGE/usr/bin/castalia-manual"
+
+# The offline manual (§20, P5/P6): the /docs tree rendered to a self-contained
+# HTML tree at package time. No network at read time and none at build time —
+# tools/help_build.py has no dependencies beyond python3, because the ISO hook
+# runs inside a minbase chroot where pip does not exist.
+log "building the offline Help Center from docs/ (§20)"
+PYTHONPATH="$REPO/tools" python3 "$REPO/tools/help_build.py" \
+    --docs "$REPO/docs" --out "$STAGE$SHARE/help" >/dev/null
+[ -s "$STAGE$SHARE/help/index.html" ] \
+    || die "help_build produced no index — the machine would ship with no manual"
 install -Dm644 "$REPO/shell/session/castalia.desktop" \
     "$STAGE/usr/share/xsessions/castalia.desktop"
 # a greeter launches the session with no CASTALIA_REPO in the environment;

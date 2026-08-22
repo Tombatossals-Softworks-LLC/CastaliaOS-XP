@@ -1,0 +1,60 @@
+#!/bin/sh
+# castalia-manual — open the offline manual (Bible §20, P5/P6).
+#
+# The manual is built from /docs at ISO time by tools/help_build.py and lands
+# at /usr/share/castalia/help. This opens it, and its entire job is to do that
+# without needing a network — which is the whole point of shipping a manual on
+# the machine in the first place.
+#
+#     castalia-manual                 the front page
+#     castalia-manual recovery        that section
+#     castalia-manual user/atajos     that page
+#
+# POSIX sh only (Bible §12).
+
+set -u
+
+HELP="${CASTALIA_HELP:-/usr/share/castalia/help}"
+
+if [ ! -d "$HELP" ]; then
+    printf 'castalia-manual: no hay manual instalado en %s\n' "$HELP" >&2
+    printf 'castalia-manual: se genera con: python3 tools/help_build.py\n' >&2
+    exit 1
+fi
+
+TARGET="$HELP/index.html"
+if [ $# -ge 1 ]; then
+    want=$1
+    # A section name, a page name, or a path. Tried in that order so that
+    # `castalia-manual recovery` reaches the section front page rather than
+    # failing on a file that is called README.
+    for candidate in \
+        "$HELP/$want/README.html" \
+        "$HELP/$want.html" \
+        "$HELP/$want"
+    do
+        if [ -f "$candidate" ]; then
+            TARGET=$candidate
+            break
+        fi
+    done
+    if [ "$TARGET" = "$HELP/index.html" ]; then
+        printf 'castalia-manual: no encuentro «%s» en el manual\n' "$want" >&2
+        printf 'castalia-manual: abriendo el índice\n' >&2
+    fi
+fi
+
+# Whatever this machine uses to open an HTML file. xdg-open first because it
+# honours the user's choice in "Programas predeterminados"; the rest are the
+# fallbacks for an image where xdg-utils is not installed. Printing the path
+# is the last resort and is better than silence — on a machine with no
+# browser at all, the path is still something a person can act on.
+for opener in xdg-open x-www-browser sensible-browser firefox; do
+    if command -v "$opener" >/dev/null 2>&1; then
+        exec "$opener" "$TARGET"
+    fi
+done
+
+printf 'castalia-manual: no hay ningún navegador instalado.\n' >&2
+printf 'castalia-manual: el manual está en: %s\n' "$TARGET" >&2
+exit 1

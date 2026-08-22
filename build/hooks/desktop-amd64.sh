@@ -51,6 +51,11 @@ install -Dm755 recovery/boot/initramfs-hook \
 install -Dm755 recovery/boot/init-premount \
     /etc/initramfs-tools/scripts/init-premount/castalia-recovery
 
+echo "castalia-hook: building the offline Help Center from docs/ (§20)"
+PYTHONPATH=tools python3 tools/help_build.py \
+    --docs docs --out "$SHARE/help"
+install -Dm755 shell/session/castalia-manual /usr/bin/castalia-manual
+
 echo "castalia-hook: staging the hardware probe (§6.15)"
 install -Dm644 hwprobe/quirks.json /usr/share/castalia/hwprobe/quirks.json
 cp -a hwprobe/castalia_hwprobe /usr/share/castalia/hwprobe/

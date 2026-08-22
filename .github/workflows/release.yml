@@ -5,6 +5,7 @@
 #
 #   * castalia-desktop .deb + the apt overlay repo (tarred)
 #   * live-amd64 ISO         — QEMU-boot-verified at the FLOOR tier
+#   * live-i386 ISO          — the same, on a CPU that cannot run 64-bit code
 #   * live-desktop-amd64 ISO — graphical desktop framebuffer-verified
 #   * SHA256SUMS (+ .asc when a signing key is configured)
 #
@@ -170,6 +171,39 @@ jobs:
           name: release-iso-live
           path: build/out/iso/castalia-live-amd64.iso
 
+  iso-live-i386:
+    name: "ISO — live-i386 (built + booted on a 32-bit CPU)"
+    # §4.1 and §16 put the FLOOR at a Pentium 4. A release that ships only
+    # amd64 images is not the product those sections describe, and until this
+    # job existed that is exactly what every release pipeline would have
+    # produced.
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out
+        uses: actions/checkout@v7
+
+      - name: Install ISO + boot toolchain
+        run: |
+          sh ci/apt-install.sh \
+            debootstrap squashfs-tools xorriso isolinux syslinux-common \
+            qemu-system-x86 python3
+
+      - name: Build the live-i386 ISO
+        run: sudo sh build/mkiso.sh --edition live-i386
+
+      - name: "Boot-verify on a CPU that cannot run 64-bit code"
+        run: |
+          sh tests/qemu/boot-smoke.sh \
+            build/out/iso/castalia-live-i386.iso \
+            --qemu qemu-system-i386 --cpu coreduo --timeout 300
+
+      - name: Upload the ISO
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-iso-live-i386
+          path: build/out/iso/castalia-live-i386.iso
+
   iso-desktop:
     name: ISO — live-desktop-amd64 (built + desktop framebuffer-verified)
     needs: gates
@@ -210,7 +244,7 @@ jobs:
 
   publish:
     name: Publish the GitHub Release (draft on tag push; live on publish dispatch)
-    needs: [package, iso-live, iso-desktop]
+    needs: [package, iso-live, iso-live-i386, iso-desktop]
     if: github.ref_type == 'tag' || (github.event_name == 'workflow_dispatch' && inputs.publish)
     runs-on: ubuntu-latest
     timeout-minutes: 45
@@ -235,6 +269,8 @@ jobs:
           find dist -name 'castalia-repo-*.tar.gz' -exec cp {} out/ \;
           find dist -name 'castalia-live-amd64.iso' \
                -exec cp {} "out/castalia-live-amd64-$ver.iso" \;
+          find dist -name 'castalia-live-i386.iso' \
+               -exec cp {} "out/castalia-live-i386-$ver.iso" \;
           find dist -name 'castalia-live-desktop-amd64.iso' \
                -exec cp {} "out/castalia-live-desktop-amd64-$ver.iso" \;
           find dist -name 'castalia-desktop-live.png' \
@@ -242,6 +278,7 @@ jobs:
           for f in "out/castalia-desktop_${ver}_amd64.deb" \
                    "out/castalia-repo-$ver.tar.gz" \
                    "out/castalia-live-amd64-$ver.iso" \
+                   "out/castalia-live-i386-$ver.iso" \
                    "out/castalia-live-desktop-amd64-$ver.iso" \
                    "out/desktop-proof-$ver.png"; do
             [ -s "$f" ] || { echo "missing release asset: $f" >&2; exit 1; }
@@ -301,12 +338,19 @@ jobs:
           offscreen render of every app in every theme, and the live E2E of
           the whole suite under Openbox) passed first, and each ISO was then
           booted in QEMU — the desktop image up to a verified graphical
-          framebuffer — before being attached here.
+          framebuffer, and the 32-bit image on an emulated CPU that cannot
+          execute 64-bit code — before being attached here.
+
+          Known issues for this release are in
+          [docs/releases/KNOWN_ISSUES.md](https://github.com/$GITHUB_REPOSITORY/blob/$tag/docs/releases/KNOWN_ISSUES.md).
 
           ## Assets
           * **castalia-live-desktop-amd64-$ver.iso** — the graphical live
             desktop (Xorg + Openbox + the 38-app Castalia shell, Human theme).
           * **castalia-live-amd64-$ver.iso** — the lean bootable base image.
+          * **castalia-live-i386-$ver.iso** — the same image for 32-bit
+            machines, boot-verified on a CPU that cannot execute 64-bit code.
+            This is the FLOOR tier (§4.1, §16): a Pentium 4 with 512 MB.
           * **castalia-desktop_${ver}_amd64.deb** — the desktop as a package
             for existing Debian-family systems.
           * **castalia-repo-$ver.tar.gz** — the apt overlay repo.

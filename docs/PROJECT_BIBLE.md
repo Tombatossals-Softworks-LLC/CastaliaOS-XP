@@ -2332,6 +2332,27 @@ manual is always on the machine, no internet required (P5/P6).
 its "last verified on version". The **Legal Notice** and **provenance ledger**
 are release blockers if incomplete (§3.9, §19).
 
+**Shipped** ✅ (2026-08-22): the whole set exists under `/docs`, and the rules
+above are enforced rather than remembered. `castalia_qa.docs_lint` runs in the
+`gates` tier and fails the build on a missing document, a page with no
+"last verified on version" line, or a broken internal link; a *stale* stamp is
+a warning rather than a failure, because a version bump should produce a list
+of pages to re-read, not a red build.
+
+The offline Help Center is built from the same tree by `tools/help_build.py`
+at package and ISO time, into `/usr/share/castalia/help`, and opened with
+`castalia-manual`. It carries no JavaScript, no web fonts and no external
+stylesheet, and the builder has no dependency beyond python3 — the ISO hook
+runs inside a minbase chroot, and a help page that has to fetch something is a
+help page that does not open when the network is what broke. A test asserts
+both.
+
+User-facing pages are in **Spanish**, because they become the Help Center on a
+Spanish desktop and a manual the user cannot read is not a manual;
+contributor-facing pages are in **English**, matching this document and the
+code. Remaining: the Help Center *app* (`castalia-bienvenida`, F1) still shows
+its own short built-in topics and does not yet link the generated manual.
+
 ---
 
 ## 21. Branding and Lore
