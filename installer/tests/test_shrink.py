@@ -30,6 +30,7 @@ from castalia_installer.model import (  # noqa: E402
     PartitionInfo,
     available_modes,
     max_freeable_mib,
+    min_shrink_mib,
     min_size_after_shrink,
     plan_shrink,
     shrink_candidates,
@@ -126,10 +127,10 @@ class HowMuchWeLeaveBehindTest(unittest.TestCase):
                            SHRINK_KEEP_FREE_MIB)
 
     def test_we_never_shrink_below_what_is_in_there(self):
-        part = windows(size_gib=200)
-        for used_gib in (1, 20, 60, 120, 150):
+        part = windows(size_gib=100)
+        for used_gib in (1, 20, 60, 80):
             room = max_freeable_mib(part, used_gib * GiB)
-            if room < MIN_ALONGSIDE_MIB:
+            if room < min_shrink_mib(part):
                 continue
             sp = plan_shrink(part, used_gib * GiB)
             self.assertGreater(sp.new_size_mib, used_gib * GiB,
@@ -149,10 +150,10 @@ class TheFreedSpaceTest(unittest.TestCase):
         self.assertEqual(sp.freed.size_mib, sp.freed_mib)
 
     def test_the_gap_never_overlaps_what_is_left_of_the_neighbour(self):
-        part = windows(size_gib=200)
-        for used_gib in (1, 10, 50, 100, 140):
+        part = windows(size_gib=100)
+        for used_gib in (1, 10, 50, 80):
             room = max_freeable_mib(part, used_gib * GiB)
-            if room < MIN_ALONGSIDE_MIB:
+            if room < min_shrink_mib(part):
                 continue
             sp = plan_shrink(part, used_gib * GiB)
             self.assertGreaterEqual(sp.freed.start_mib, sp.new_end_mib)

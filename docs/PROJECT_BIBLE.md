@@ -2118,9 +2118,16 @@ assume a very small team (1–3 people) and are deliberately conservative.
   the "verified" §23.7 #3 asks for. Remaining: manual partitioning, and GPT
   (the msdos four-primary ceiling means a disk with two existing partitions
   can host neither mode).
-- **Remaining Phase 5 work:** the ncurses front-end, the recovery boot
-  environment, and the end-to-end QEMU install-and-boot for the dual-boot
-  paths (whole-disk is covered).
+- **Text installer shipped** ✅ (§14.5 #5, "never a dead end"): the line-based
+  installer offers the same three modes in the same order, sets a password
+  without echoing it, and reports a failed step in the tool's own words rather
+  than as a traceback. It met the letter of §14.5 #5 before this and not the
+  point — it could only erase the disk, on machines that fall back to text
+  mode precisely because their graphics are broken, which are *more* likely to
+  be dual-booting, not less.
+- **Remaining Phase 5 work:** the end-to-end QEMU install-and-boot for the
+  dual-boot paths (whole-disk is covered), manual partitioning, and a
+  graphical Recovery Center.
 - **Goals:** Qt GUI installer + ncurses fallback (shared backend); dual-boot
   detection; Display Test; **Restore Points** engine + Recovery boot env + Safe
   Mode; Recovery Center MVP.

@@ -33,6 +33,14 @@ MIN_ALONGSIDE_MIB = ALIGN_MIB + BOOT_MIB + 512 + MIN_ROOT_MIB
 MAX_MSDOS_PRIMARIES = 4
 
 
+#: The latest a Castalia layout may start. /boot is the first partition the
+#: layout places, and §6.2 requires it to sit wholly inside the first 128 GiB
+#: so a vintage BIOS can read the kernel. Anything that would put the start of
+#: the layout past this is refused — by not being offered, rather than by
+#: raising halfway through building a plan.
+LATEST_LAYOUT_START_MIB = FIRST_128_GIB_MIB - BOOT_MIB
+
+
 def default_swap_mib(ram_mib: int) -> int:
     """Swap sized to RAM, capped at 8 GiB, hibernate off by default (§4.6).
 
@@ -184,7 +192,12 @@ def available_modes(disk: "DiskInfo",
     is last because it is the one that erases the machine.
     """
     modes = []
-    if largest_free_region(disk, partitions) is not None:
+    # "Install alongside" is an answer to "there is already a system here".
+    # On a blank disk the largest free region is the whole disk and the mode
+    # would technically work, but offering it means offering a choice between
+    # two spellings of the same install, one of which is named after a
+    # neighbour that does not exist.
+    if partitions and largest_free_region(disk, partitions) is not None:
         modes.append(MODE_ALONGSIDE)
     if used and shrink_candidates(disk, partitions, used):
         modes.append(MODE_SHRINK)
@@ -240,6 +253,19 @@ def min_size_after_shrink(used_mib: int) -> int:
     return used_mib + slack
 
 
+def min_shrink_mib(part: PartitionInfo) -> int:
+    """The least a shrink of *part* must free for §6.2 to hold.
+
+    A shrink opens its gap at the partition's new end, so on a partition that
+    reaches past the first 128 GiB, taking *too little* leaves the gap — and
+    with it /boot — out where an old BIOS may not be able to read the kernel.
+    That makes this a floor, not a ceiling, and it is the counter-intuitive
+    one: the constraint is satisfied by taking MORE space, not less.
+    """
+    needed = part.end_mib - LATEST_LAYOUT_START_MIB
+    return max(MIN_ALONGSIDE_MIB, needed)
+
+
 def max_freeable_mib(part: PartitionInfo, used_mib: int) -> int:
     """How much *part* could give up, at most. 0 when it must not be touched.
 
@@ -280,13 +306,25 @@ def plan_shrink(part: PartitionInfo, used_mib: int,
             f"partition ({part.size_mib} MiB) can have — refusing to plan a "
             f"shrink on a measurement that cannot be right")
     available = max_freeable_mib(part, used_mib)
-    if available < MIN_ALONGSIDE_MIB:
+    floor = min_shrink_mib(part)
+    if available < floor:
+        if floor > MIN_ALONGSIDE_MIB:
+            raise ValueError(
+                f"{part.path} ends at {part.end_mib} MiB, so a shrink has to "
+                f"free at least {floor} MiB to keep /boot inside the first "
+                f"128 GiB (§6.2) — and it can only spare {available} MiB "
+                f"while leaving room for what is on it")
         raise ValueError(
             f"{part.path} can only spare {available} MiB once "
             f"{min_size_after_shrink(used_mib)} MiB is left for what is on "
             f"it; an install needs at least {MIN_ALONGSIDE_MIB} MiB")
     want = available if free_mib is None else free_mib
-    if want < MIN_ALONGSIDE_MIB:
+    if want < floor:
+        if floor > MIN_ALONGSIDE_MIB:
+            raise ValueError(
+                f"asked to free {want} MiB, but this partition ends at "
+                f"{part.end_mib} MiB and a shrink has to free at least "
+                f"{floor} MiB to keep /boot inside the first 128 GiB (§6.2)")
         raise ValueError(
             f"asked to free {want} MiB, but an install needs at least "
             f"{MIN_ALONGSIDE_MIB} MiB")
@@ -316,7 +354,7 @@ def shrink_candidates(disk: "DiskInfo", partitions: list[PartitionInfo],
     scored = [(max_freeable_mib(p, used[p.path]), p)
               for p in partitions if p.path in used]
     return [p for gain, p in sorted(scored, key=lambda t: t[0], reverse=True)
-            if gain >= MIN_ALONGSIDE_MIB]
+            if gain >= min_shrink_mib(p)]
 
 
 def largest_free_region(disk: "DiskInfo",
@@ -330,6 +368,13 @@ def largest_free_region(disk: "DiskInfo",
     if len(partitions) + 3 > MAX_MSDOS_PRIMARIES:
         return None
     for gap in free_regions(disk.size_mib, partitions):
+        # §6.2: /boot goes at the front of the gap and has to be inside the
+        # first 128 GiB. Free space late on a big disk is exactly where that
+        # stops being true, and the plan raises on it — so the gap must be
+        # rejected here, where the answer is "this mode is not available",
+        # rather than there, where it is a traceback.
+        if gap.start_mib > LATEST_LAYOUT_START_MIB:
+            continue
         if gap.size_mib >= MIN_ALONGSIDE_MIB:
             return gap
     return None

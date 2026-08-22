@@ -30,7 +30,13 @@ would land past the first 128 GiB (§6.2). For `shrink`, additionally:
   literally full, and the person who agreed to make room did not agree to
   that;
 - a mounted filesystem, or an NTFS volume that is dirty — which is what a
-  hibernated Windows and one left in Fast Startup look like.
+  hibernated Windows and one left in Fast Startup look like;
+- a shrink that would leave `/boot` past the first 128 GiB (§6.2). This one
+  is a **floor, not a ceiling**, and it is the counter-intuitive one: a shrink
+  opens its gap at the partition's *new end*, so on a partition reaching past
+  the 128 GiB mark, taking too **little** is what puts the kernel somewhere a
+  vintage BIOS cannot read it. The same rule stops `alongside` being offered
+  for free space that starts out there.
 
 **The order inside a shrink is the whole safety property**: the filesystem is
 resized before the partition is, never the other way round. Reversed, the new
@@ -57,7 +63,7 @@ Proof it does what it says, on real disks rather than only on paper:
 | `castalia_installer/plan.py` | ✅ | `build_plan(config, disk)` → an ordered, inspectable list of `Step`s (no side effects) |
 | `castalia_installer/engine.py` | ✅ | executes a plan through a `Runner` boundary, behind the §14.5 confirmation gate |
 | `castalia_installer/probe.py` | ✅ | disk **and partition** discovery via `lsblk` — what is already on the target, so §14.3 can be honoured (both parsers pure/tested) |
-| `castalia_installer/tui.py` | ✅ | the text installer — the guaranteed fallback (§14.5 #5) |
+| `castalia_installer/tui.py` | ✅ | the text installer — the guaranteed fallback (§14.5 #5). Offers all three modes, sets a password, and probes through injected callables so the whole flow is unit-tested without a disk or a terminal |
 | `castalia_installer/__main__.py` | ✅ | CLI: `--dry-run`, `--copy-only`, `--confirm-erase DISK` |
 | `gui/` | ✅ | Qt5 wizard (`castalia-instalador`) driving the backend |
 | `tests/` | ✅ | 125 unit tests + three real-disk loopback smokes (install, alongside, shrink) |
